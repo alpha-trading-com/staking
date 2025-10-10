@@ -203,6 +203,7 @@
             <button class="tab tab-active" id="tab-balances" onclick="showTab('balances')">Balances</button>
             <button class="tab tab-inactive" id="tab-stake" onclick="showTab('stake')">Stake</button>
             <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
+            <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
             <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Tolerance Calculators</button>
         </div>
         <!-- Tab Contents -->
@@ -292,6 +293,54 @@
                 <button onclick="unstake()" class="btn btn-danger">Unstake</button>
             </div>
         </div>
+        <!-- Move Stake Tab -->
+        <div id="tabContent-move" style="display:none;">
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Move Stake</h2>
+
+                <div class="input-group">
+                    <label class="input-label">Wallet Name</label>
+                    <select id="moveWalletName" class="input-field">
+                        {% for wallet in wallet_names %}
+                            <option value="{{ wallet }}" {% if loop.first %}selected{% endif %}>{{ wallet }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Amount (optional)</label>
+                    <input type="text" id="moveAmount" class="input-field" placeholder="Leave blank to move all staked TAO">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Origin Network ID</label>
+                    <input type="text" id="originNetuid" class="input-field" placeholder="Enter origin network ID">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Destination Network ID</label>
+                    <input type="text" id="destinationNetuid" class="input-field" placeholder="Enter destination network ID">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Origin Validator Hotkey</label>
+                    <input type="text" id="originHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Destination Validator Hotkey</label>
+                    <input type="text" id="destinationHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Retries (optional)</label>
+                    <input type="text" id="moveRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+
+                <button onclick="moveStake()" class="btn">Move Stake</button>
+            </div>
+        </div>
+
         <div id="tabContent-calc" style="display:none;">
             <div class="form-container mb-8">
                 <h2 class="text-xl font-semibold mb-4">Tolerance Calculators</h2>
@@ -310,13 +359,74 @@
                 <div id="minStakeToleranceResult" class="mt-4 text-gray-300"></div>
                 <div id="minUnstakeToleranceResult" class="mt-4 text-gray-300"></div>
             </div>
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Validator List</h2>
+                <div id="validatorListContainer">
+                    <div class="validator-row" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="flex: 1;">5DP5WnFJU1T7V2DeLUwknN88gLZ8rk1Zbc2v8UryMPYPsn71</span>
+                        <button type="button" data-validator="5DP5WnFJU1T7V2DeLUwknN88gLZ8rk1Zbc2v8UryMPYPsn71" class="btn btn-xs copy-validator-btn" style="margin-left:10px;">Copy</button>
+                    </div>
+                    <div class="validator-row" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="flex: 1;">5GeEtY7Ars1FbSKhueoffzLHrYgw3rxn7eF6egicCbWmNs71</span>
+                        <button type="button" data-validator="5GeEtY7Ars1FbSKhueoffzLHrYgw3rxn7eF6egicCbWmNs71" class="btn btn-xs copy-validator-btn" style="margin-left:10px;">Copy</button>
+                    </div>
+                    <div class="validator-row" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="flex: 1;">5CohrGwCpQcZyAc9ZBnHJgN8rFj5sLpz3Lk67YK5N8D3N6J4</span>
+                        <button type="button" data-validator="5CohrGwCpQcZyAc9ZBnHJgN8rFj5sLpz3Lk67YK5N8D3N6J4" class="btn btn-xs copy-validator-btn" style="margin-left:10px;">Copy</button>
+                    </div>
+                </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Use event delegation for robustness
+                        document.getElementById('validatorListContainer').addEventListener('click', function(e) {
+                            if (e.target && e.target.classList.contains('copy-validator-btn')) {
+                                const address = e.target.getAttribute('data-validator');
+                                const button = e.target;
+                                const originalText = button.innerText;
+                                // Function to show copied feedback
+                                function showCopied() {
+                                    button.innerText = 'Copied';
+                                    button.disabled = true;
+                                    setTimeout(function() {
+                                        button.innerText = originalText;
+                                        button.disabled = false;
+                                    }, 1000);
+                                }
+
+                                if (navigator.clipboard) {
+                                    navigator.clipboard.writeText(address).then(function() {
+                                        showCopied();
+                                    }, function(err) {
+                                        // fallback or error feedback
+                                        button.innerText = 'Failed';
+                                        setTimeout(function() {
+                                            button.innerText = originalText;
+                                            button.disabled = false;
+                                        }, 1000);
+                                    });
+                                } else {
+                                    // Fallback for very old browsers
+                                    const textarea = document.createElement('textarea');
+                                    textarea.value = address;
+                                    document.body.appendChild(textarea);
+                                    textarea.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(textarea);
+                                    showCopied();
+                                }
+                            }
+                        });
+                    });
+                </script>
+            </div>
         </div>
     </div>
 
     <script>
         // Tab logic
         function showTab(tab) {
-            const tabs = ['balances', 'stake', 'unstake', 'calc'];
+            const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
+
             tabs.forEach(t => {
                 document.getElementById('tabContent-' + t).style.display = (t === tab) ? '' : 'none';
                 document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
@@ -416,6 +526,42 @@
             } catch (error) {
                 console.error('Error unstaking:', error);
                 alert('Error unstaking. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        async function moveStake() {
+            const button = document.querySelector('button[onclick="moveStake()"]');
+            const walletName = document.getElementById('moveWalletName').value;
+            const amount = document.getElementById('moveAmount').value;
+            const originNetuid = document.getElementById('originNetuid').value;
+            const destinationNetuid = document.getElementById('destinationNetuid').value;
+            const originHotkey = document.getElementById('originHotkey').value;
+            const destinationHotkey = document.getElementById('destinationHotkey').value;
+            const retries = document.getElementById('moveRetries').value;
+
+            if (!walletName || !originNetuid || !destinationNetuid) {
+                alert('Please fill out wallet name, origin netuid, and destination netuid.');
+                return;
+            }
+
+            const amountText = amount ? `${amount} ALPHA` : 'all ALPHA';
+            const confirmMessage = `Are you sure you want to move ${amountText} from validator "${originHotkey}" (net ${originNetuid}) to validator "${destinationHotkey}" (net ${destinationNetuid}) using wallet "${walletName}"?`;
+            if (!confirm(confirmMessage)) return;
+
+            try {
+                setButtonLoading(button, true);
+                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}`;
+                if (amount) url += `&amount=${amount}`;
+                if (retries) url += `&retries=${retries}`;
+
+                const response = await fetch(url);
+                const result = await response.json();
+                alert(JSON.stringify(result, null, 2));
+            } catch (error) {
+                console.error('Error moving stake:', error);
+                alert('Error moving stake. Please try again.');
             } finally {
                 setButtonLoading(button, false);
             }

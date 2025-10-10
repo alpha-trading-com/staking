@@ -92,3 +92,29 @@ def unstake(
         min_tolerance_unstaking=min_tolerance_unstaking,
         retries=retries
     )
+
+@router.get("/move_stake")
+def move_stake(
+    wallet_name: str,
+    origin_netuid: int, 
+    destination_netuid: int,
+    amount: Optional[float] = None,
+    origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
+    destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
+    retries: int = settings.DEFAULT_RETRIES,
+    username: str = Depends(get_current_username)
+):
+    # Validate retries parameter
+    if retries < 1:
+        retries = 1    
+        
+    return stake_service.move_stake(
+        amount=amount,
+        wallet_name=wallet_name,
+        origin_hotkey=origin_hotkey,
+        destination_hotkey=destination_hotkey,
+        origin_netuid=origin_netuid,
+        destination_netuid=destination_netuid,
+        retries=retries
+    )
+

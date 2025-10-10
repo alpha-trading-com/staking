@@ -151,6 +151,61 @@ class Proxy:
         else:
             return False, f"Error: {error_message}"
 
+    def move_stake(
+        self, 
+        proxy_wallet: bt.wallet,
+        delegator: str,
+        origin_hotkey: str, 
+        destination_hotkey: str, 
+        origin_netuid: int, 
+        destination_netuid: int, 
+        amount: Balance, 
+    ) -> tuple[bool, str]:
+        """
+        Move stake between validators
+        
+        Args:
+            hotkey: Hotkey address
+            origin_netuid: Source subnet ID
+            dest_netuid: Destination subnet ID
+            amount: Amount to swap (if not using --all)
+            all: Whether to swap all available balance
+        """
+        balance = self.subtensor.get_stake(
+            coldkey_ss58=delegator,
+            hotkey_ss58=origin_hotkey,
+            netuid=origin_netuid,
+        )
+        print(f"Current alpha balance on netuid {origin_netuid}: {balance}")
+        
+        if amount.rao > balance.rao:
+            return False, f"Error: Amount to swap is greater than current balance"
+
+        self.init_runtime()
+        
+        call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='move_stake',
+            call_params={
+                'origin_hotkey': origin_hotkey,
+                'destination_hotkey': destination_hotkey,
+                'origin_netuid': origin_netuid,
+                'destination_netuid': destination_netuid,
+                'alpha_amount': amount.rao - 1,
+            }
+        )
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
+        new_balance = self.subtensor.get_stake(
+            coldkey_ss58=delegator,
+            hotkey_ss58=origin_hotkey,
+            netuid=origin_netuid,
+        )
+        print(f"New alpha balance on netuid {origin_netuid}: {new_balance}")
+        if new_balance.rao < balance.rao:
+            return True, f"Stake swapped successfully"
+        else:
+            return False, f"Error: {error_message}"
+
     def _do_proxy_call(
         self,
         proxy_wallet: bt.wallet,

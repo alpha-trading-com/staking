@@ -207,4 +207,57 @@ class StakeService:
         }
 
 
+    def move_stake(
+        self,
+        wallet_name: str,
+        origin_netuid: int, 
+        destination_netuid: int, 
+        amount: Optional[float] = None, 
+        origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY, 
+        destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY, 
+        retries: int = settings.DEFAULT_RETRIES
+    ) -> Dict[str, Any]:
+        """
+        Execute move stake operation with retry mechanism and error handling.
+        """
+        wallet, delegator = self.wallets[wallet_name]
+
+        if amount is None:
+            amount_balance = self.subtensor.get_stake(
+                coldkey_ss58=delegator,
+                hotkey_ss58=origin_hotkey,
+                netuid=origin_netuid
+            )
+        else:
+            amount_balance = bt.Balance.from_tao(amount, origin_netuid)   
+        
+        
+        # Execute move stake with retry mechanism
+        success = False
+        msg = None
+
+        for _ in range(retries):
+            try:
+                result, msg = self.proxy.move_stake(
+                    amount=amount_balance,
+                    proxy_wallet=wallet,
+                    delegator=delegator,
+                    origin_hotkey=origin_hotkey,
+                    destination_hotkey=destination_hotkey,
+                    origin_netuid=origin_netuid,
+                    destination_netuid=destination_netuid,
+                )
+                if result:
+                    success = True
+                    break
+            except Exception as e:
+                msg = str(e)
+                continue
+        
+        # This should never be reached, but required for type checking
+        return {
+            "success": success,
+            "error": msg
+        }
+
 stake_service = StakeService(wallets)

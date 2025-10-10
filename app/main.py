@@ -31,7 +31,7 @@ def read_root(request: fastapi.Request, username: str = Depends(get_current_user
             balance = subtensor.get_balance(delegator)
             balance_html += f"""
                 <div class="balance-container">
-                    <div class="balance-title"><a target="_blank" href="/stake_list?wallet_name={delegator}" style="text-decoration: none; color: inherit; cursor: pointer; text-decoration: underline;">{wallet_name}</a></div>
+                    <div class="balance-title"><a target="_blank" href="/stake_list_v2?wallet_name={delegator}" style="text-decoration: none; color: inherit; cursor: pointer; text-decoration: underline;">{wallet_name}</a></div>
                     <div class="balance-amount">{balance} TAO</div>
                 </div>
             """
@@ -46,6 +46,7 @@ def read_root(request: fastapi.Request, username: str = Depends(get_current_user
             "delegators": settings.DELEGATORS,
         }
     )
+
 
 
 @app.get("/stake_list")
@@ -81,3 +82,5 @@ def stake_list_v2(wallet_name: str):
     </html>
     """
     return HTMLResponse(content=html_content)
+
+
