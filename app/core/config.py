@@ -23,8 +23,8 @@ class Settings(BaseModel):
     
     # WALLET_NAMES: List[str] = os.getenv("WALLET_NAMES", "").split(",")
     # DELEGATORS: List[str] = os.getenv("DELEGATORS", "").split(",")
-    WALLET_NAMES: List[str] = ["black", "green", "webgenie"]
-    DELEGATORS: List[str] = ["5DZhYqgHhRPYUHqjaU2gS2LNL7VS8Fb5utxZ7QEkVGqTnmh5","5FWhdv8o7fGo6yn54qXCn1xTxXsMaNLaotKYzUSG2iZp4tVZ", "5GhDziWFX56mTrG8Qgytr5bcPNDKVxnVeWCZt3PC4n59pCCP"]
+    WALLET_NAMES: List[str] = ["soon"]
+    DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
     
     ADMIN_HASH: str = "$2b$12$rFj2f8j0jphOUMy3ZMjfdO9wQedLq7zSHmsjYDOU9zZkULYkdfMj2"
 
