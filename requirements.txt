@@ -1,3 +1,4 @@
-bittensor==9.8.3
-python-dotenv==1.1.1
+bittensor
+substrate-interface
+python-dotenv
 bcrypt
