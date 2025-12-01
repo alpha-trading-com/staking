@@ -26,7 +26,7 @@ class Settings(BaseModel):
     WALLET_NAMES: List[str] = ["soon"]
     DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
     
-    ADMIN_HASH: str = "$2b$12$rFj2f8j0jphOUMy3ZMjfdO9wQedLq7zSHmsjYDOU9zZkULYkdfMj2"
+    ADMIN_HASH: str = "$2b$12$nJCB59aSOjndYY665l/zN.SMIB5OSIv6TagvBcUUyhBKD2wi/WTUC"
 
 settings = Settings()
 
