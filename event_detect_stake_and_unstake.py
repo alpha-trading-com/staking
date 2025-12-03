@@ -203,26 +203,24 @@ def check_stake_events(stake_events):
 
 
 if __name__ == "__main__":    
+    max_stake_amount = int(input("Enter the max stake amount: "))
     proxy = Proxy(network=settings.NETWORK)
     proxy.init_runtime()
-
     event_detector = EventDetector(proxy)
-    #event_detector.stake(62)
-    event_detector.unstake(62)
-    # while True:
-    #     block_number = subtensor.get_current_block()
+    while True:
+        block_number = subtensor.get_current_block()
         
-    #     block_hash = subtensor.substrate.get_block_hash(block_id=block_number)
-    #     events = subtensor.substrate.get_events(block_hash=block_hash)
+        block_hash = subtensor.substrate.get_block_hash(block_id=block_number)
+        events = subtensor.substrate.get_events(block_hash=block_hash)
         
-    #     print(f"==============Block number: {block_number}==============")
-    #     stake_events = extract_stake_events_from_data(events)
-    #     netuid_val = check_stake_events(stake_events)
-    #     if netuid_val != -1:
-    #         result = event_detector.stake(netuid_val)
-    #         if result:
-    #             print(f"Stake added successfully: {netuid_val}")
-    #         else:
-    #             print(f"Stake failed to add: {netuid_val}")
-    #         break;
-    #     subtensor.wait_for_block()
+        print(f"==============Block number: {block_number}==============")
+        stake_events = extract_stake_events_from_data(events)
+        netuid_val = check_stake_events(stake_events)
+        if netuid_val != -1:
+            result = event_detector.stake(netuid_val)
+            if result:
+                print(f"Stake added successfully: {netuid_val}")
+            else:
+                print(f"Stake failed to add: {netuid_val}")
+            break;
+        subtensor.wait_for_block()
