@@ -28,11 +28,12 @@ COLDKEYS_TO_DETECT = [
 SAFE_SUBNETS = [
     121,
     71,
-    46,
+    46, 
     127,
     76,
     18,
     91,
+    16,
     107,
 ]
 
