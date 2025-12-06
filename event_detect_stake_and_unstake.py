@@ -13,7 +13,11 @@ from app.services.proxy import Proxy
 from utils.logger import logger
 
 
-COLDKEYS_TO_DETECT = ["5GHrA88kdA9mZqGuEEz5JU1rmwERKVLUB7ZctBP4DHVQkZww"]
+COLDKEYS_TO_DETECT = [
+    "5CwqN6oHkZMLedCPrEJqZRaw7d9KRxupKM8BgDQvnmbqBs9K",
+    "5Fge5ZJKCtyoizEN6DWi9US4aMfzEgtCWtBErf4xkpeuUkrQ",
+    "5FntQJYAchxuuh8dwCg9FukPFC9W9rozWV5cDCFLQHAzGbAX",
+]
 NETWORK = "finney"
 MAX_STAKE_AMOUNT = 1
 #NETWORK = "ws://161.97.128.68:9944"
@@ -203,10 +207,16 @@ def check_stake_events(stake_events):
 
 
 if __name__ == "__main__":    
-    max_stake_amount = int(input("Enter the max stake amount: "))
+    MAX_STAKE_AMOUNT = int(input("Enter the max stake amount: "))
+    print(f"Max stake amount: {MAX_STAKE_AMOUNT}")
+
+    COLDKEYS_TO_DETECT = input("Enter the coldkeys to detect: ").split(",")
+    print(f"Watching Coldkeys: {COLDKEYS_TO_DETECT}")
+
     proxy = Proxy(network=settings.NETWORK)
     proxy.init_runtime()
     event_detector = EventDetector(proxy)
+    
     while True:
         block_number = subtensor.get_current_block()
         
