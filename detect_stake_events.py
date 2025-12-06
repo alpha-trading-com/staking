@@ -17,7 +17,28 @@ COLDKEYS_TO_DETECT = [
     "5CwqN6oHkZMLedCPrEJqZRaw7d9KRxupKM8BgDQvnmbqBs9K",
     "5Fge5ZJKCtyoizEN6DWi9US4aMfzEgtCWtBErf4xkpeuUkrQ",
     "5FntQJYAchxuuh8dwCg9FukPFC9W9rozWV5cDCFLQHAzGbAX",
+    "5FtA2K4dGsLtjy7NTCGxfbnLJ2fSm81wh2GbFEysnBpc67Pi",
+    "5GgPoUukPSPTSXfV1mgsm1t5UqcKZBeaQnba4kd1iDMvhn4z",
+    "5Ev4Fev4csqtcPqvUyewcyPUq3eG5cWK4XgBibfvLdRKgQrC",
+    "5HYSbGSsZYJrvUKP1RgyZAcU5tqC9Lyo6QjKHtfxeiA9fqW7",
+    "5GxpgYfmp9rT9qJjG8fovD2QxsxSQzTxPLoYZQza3brjg7i6",
+    "5CaZNPTVSxZoaDt75BrbN3v4pr217MH8AmAMZC1qqFHHvmTp",
 ]
+
+SAFE_SUBNETS = [
+    121,
+    71,
+    46,
+    127,
+    76,
+    18,
+    91,
+    107,
+]
+
+checked_subnets = []
+
+
 NETWORK = "finney"
 MAX_STAKE_AMOUNT = 1
 #NETWORK = "ws://161.97.128.68:9944"
@@ -190,28 +211,34 @@ def extract_stake_events_from_data(events_data):
 
 def check_stake_events(stake_events):
     global COLDKEYS_TO_DETECT
-
+    global checked_subnets
+    net_uids = []
     for event in stake_events:
         netuid_val = int(event['netuid'])
         tao_amount = float(event['amount_tao'])
         coldkey = event['coldkey']
+        if netuid_val not in SAFE_SUBNETS:
+            continue
+
+        if netuid_val in checked_subnets:
+            continue
         
         # Green for stake added, red for stake removed (bright)
         if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT:
             print(f"Stake added: {coldkey} {tao_amount} {netuid_val}")
-            return netuid_val
-        else:
-            continue
+            net_uids.append(netuid_val)
 
-    return -1
+    return net_uids
 
 
 if __name__ == "__main__":    
+    checked_subnets.clear()
+    
     MAX_STAKE_AMOUNT = int(input("Enter the max stake amount: "))
     print(f"Max stake amount: {MAX_STAKE_AMOUNT}")
 
-    COLDKEYS_TO_DETECT = input("Enter the coldkeys to detect: ").split(",")
-    print(f"Watching Coldkeys: {COLDKEYS_TO_DETECT}")
+    # COLDKEYS_TO_DETECT = input("Enter the coldkeys to detect: ").split(",")
+    # print(f"Watching Coldkeys: {COLDKEYS_TO_DETECT}")
 
     proxy = Proxy(network=settings.NETWORK)
     proxy.init_runtime()
@@ -226,11 +253,13 @@ if __name__ == "__main__":
         print(f"==============Block number: {block_number}==============")
         stake_events = extract_stake_events_from_data(events)
         netuid_val = check_stake_events(stake_events)
-        if netuid_val != -1:
-            result = event_detector.stake(netuid_val)
-            if result:
-                print(f"Stake added successfully: {netuid_val}")
-            else:
-                print(f"Stake failed to add: {netuid_val}")
-            break;
+        if len(netuid_val) > 0:
+            for netuid in netuid_val:
+                result = event_detector.stake(netuid)
+                if result:
+                    print(f"Stake added successfully: {netuid}")
+                else:
+                    print(f"Stake failed to add: {netuid}")
+                checked_subnets.append(netuid)
+            continue;
         subtensor.wait_for_block()
