@@ -154,6 +154,104 @@
             padding: 40px 20px;
             font-size: 1rem;
         }
+        .register-form {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .register-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+        }
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+        .register-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .register-btn-card {
+            background: #48bb78;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+        .register-btn-card:hover {
+            background: #38a169;
+            transform: scale(1.05);
+        }
+        .register-btn-card:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .message.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .message.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .subnet-input-group {
+            display: flex;
+            gap: 12px;
+        }
+        .subnet-input-group input {
+            flex: 1;
+        }
         @media (max-width: 600px) {
             .container {
                 padding: 24px 20px;
@@ -180,6 +278,23 @@
             </ul>
         </div>
         <div class="section">
+            <h1>Register Subnet</h1>
+            <div class="register-form">
+                <div id="register-message"></div>
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="hotkey">Hotkey Address (ss58)</label>
+                        <input type="text" id="hotkey" name="hotkey" placeholder="5F5WLLEzDBXQDdTzDYgbQ3d3JKbM15HhPdFuLMmuzcUW5xG2" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subnet_id">Subnet ID</label>
+                        <input type="number" id="subnet_id" name="subnet_id" placeholder="15" min="1" required>
+                    </div>
+                    <button type="submit" class="register-btn" id="register-submit-btn">Register</button>
+                </form>
+            </div>
+        </div>
+        <div class="section">
             <h1>Hotkeys</h1>
             {% if hotkeys %}
                 <div class="hotkeys-container">
@@ -193,6 +308,12 @@
                         <div class="hotkey-label mnemic">
                             <span><strong>Mnemonic:</strong><span class="hotkey-label-content">{{ hotkey.mnemonic }}</span></span>
                             <button class="copy-btn" onclick="copyToClipboard('{{ hotkey.mnemonic }}', this)">Copy</button>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <div class="subnet-input-group">
+                                <input type="number" id="subnet-{{ loop.index0 }}" placeholder="Subnet ID" min="1" style="flex: 1;">
+                                <button class="register-btn-card" onclick="registerHotkey('{{ hotkey.ss58_address }}', {{ loop.index0 }}, this)">Register</button>
+                            </div>
                         </div>
                     </div>
                 {% endfor %}
@@ -235,6 +356,103 @@
                     console.error('Failed to copy:', err);
                 }
                 document.body.removeChild(textArea);
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('register-message');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('register-submit-btn');
+            const form = document.getElementById('register-form');
+            const formData = new FormData(form);
+            
+            const hotkey = formData.get('hotkey').trim();
+            const subnetId = parseInt(formData.get('subnet_id'));
+            
+            if (!hotkey || !subnetId) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registering...';
+            
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        hotkey: hotkey,
+                        subnet_id: subnetId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showMessage(data.message, 'success');
+                    form.reset();
+                } else {
+                    showMessage(data.detail || data.message || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register';
+            }
+        }
+
+        async function registerHotkey(hotkeyAddress, index, button) {
+            const subnetInput = document.getElementById(`subnet-${index}`);
+            const subnetId = parseInt(subnetInput.value);
+            
+            if (!subnetId || subnetId < 1) {
+                showMessage('Please enter a valid subnet ID', 'error');
+                return;
+            }
+            
+            button.disabled = true;
+            const originalText = button.textContent;
+            button.textContent = 'Registering...';
+            
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        hotkey: hotkeyAddress,
+                        subnet_id: subnetId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showMessage(data.message, 'success');
+                    subnetInput.value = '';
+                } else {
+                    showMessage(data.detail || data.message || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
             }
         }
     </script>

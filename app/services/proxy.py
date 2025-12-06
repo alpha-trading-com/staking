@@ -149,6 +149,36 @@ class Proxy:
         else:
             return False, f"Error: {error_message}"
 
+    def burned_register(
+        self,
+        proxy_wallet: bt.wallet,
+        delegator: str,
+        hotkey: str,
+        netuid: int,
+    ) -> tuple[bool, str]:
+        """
+        Do burned register.
+        
+        Args:
+            proxy_wallet: Proxy wallet
+            delegator: Delegator address
+            hotkey: Hotkey address
+            netuid: Subnet ID
+        """
+        call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='burned_register',
+            call_params={
+                'netuid': netuid,
+                'hotkey': hotkey,
+            }
+        )
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, 'Registration')
+        if is_success:
+            print(f"Register successfully")
+        else:
+            print(f"Error: {error_message}")
+
     def move_stake(
         self, 
         proxy_wallet: bt.wallet,

@@ -1,6 +1,5 @@
 import json
 import bittensor as bt
-
 from bittensor_cli.src.bittensor.utils import get_hotkey_wallets_for_wallet
 
 
@@ -10,6 +9,7 @@ def get_mnemonic(wallet):
         content = f.read()  
     data = json.loads(content)
     return data.get("secretPhrase", None)
+
 
 def get_hotkeys(wallet_name: str):
     wallets = get_hotkey_wallets_for_wallet(bt.wallet(name=wallet_name))
@@ -22,4 +22,3 @@ def get_hotkeys(wallet_name: str):
         if wallet.hotkey.ss58_address is not None
     ]
     return hotkeys
-
