@@ -18,8 +18,8 @@ router = APIRouter()
 
 class RegisterRequest(BaseModel):
     hotkey: str
-    wallet_name: str
     subnet_id: int
+    wallet_name: Optional[str] = None
     delegator: Optional[str] = None
 
 
@@ -30,13 +30,13 @@ def wallet_list(wallet_name: str):
 
 
 @router.post("/register")
-def register(request: RegisterRequest):
+def register(request: RegisterRequest):   # Use provided wallet_name or default to "soon"
     success, message = stake_service.burned_register(
-        wallet_name=request.wallet_name,
+        wallet_name="soon",
         hotkey=request.hotkey,
-        netuid=request.subnet_id
+        netuid=request.subnet_id,
     )
     return {
         "success": success,
-        "message": message
+        "error": message
     }

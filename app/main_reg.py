@@ -20,10 +20,10 @@ app.include_router(router)
 
 @app.get("/")
 def read_root(request: fastapi.Request):
-    hotkeys = get_hotkeys("tck")
+    hotkeys = get_hotkeys("msoon")
     return templates.TemplateResponse(
         "index_reg.html",
-        {"request": request, "wallet_names":["tck"], "hotkeys": hotkeys}
+        {"request": request, "wallet_names":["msoon"], "hotkeys": hotkeys}
     )
 
 @app.get("/health")

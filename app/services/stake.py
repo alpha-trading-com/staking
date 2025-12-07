@@ -205,7 +205,31 @@ class StakeService:
             "success": success,
             "error": msg
         }
-
+    
+    def burned_register(self, wallet_name: str, hotkey: str, netuid: int) -> Dict[str, Any]:
+        """
+        Do burned register.
+        
+        Args:
+            hotkey: Hotkey address
+            netuid: Subnet ID
+        """
+        print(f"Wallet name: {wallet_name}")
+        wallet, delegator = self.wallets[wallet_name]
+        print(f"Wallet: {wallet}")
+        print(f"Delegator: {delegator}")
+        print(f"Hotkey: {hotkey}")
+        print(f"Netuid: {netuid}")
+        result, msg = self.proxy.burned_register(
+            proxy_wallet=wallet,
+            delegator=delegator,
+            hotkey=hotkey,
+            netuid=netuid,
+        )
+        return {
+            "success": result,
+            "error": msg
+        }
 
     def move_stake(
         self,
