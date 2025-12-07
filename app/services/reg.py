@@ -13,6 +13,14 @@ def get_mnemonic(wallet):
 
 def get_hotkeys(wallet_name: str):
     wallets = get_hotkey_wallets_for_wallet(bt.wallet(name=wallet_name))
+    import re
+
+    def extract_number(hotkey_name):
+        match = re.match(r"hk(\d+)", hotkey_name)
+        if match:
+            return int(match.group(1))
+        return float('inf')  # put any that don't match at the end
+
     hotkeys = [
         {
             "name": wallet.hotkey_str,
@@ -21,4 +29,5 @@ def get_hotkeys(wallet_name: str):
         } for wallet in wallets
         if wallet.hotkey.ss58_address is not None
     ]
+    hotkeys.sort(key=lambda hk: extract_number(hk["name"]))
     return hotkeys
