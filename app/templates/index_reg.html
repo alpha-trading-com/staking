@@ -284,11 +284,11 @@
                 <form id="register-form" onsubmit="handleRegister(event)">
                     <div class="form-group">
                         <label for="hotkey">Hotkey Address (ss58)</label>
-                        <input type="text" id="hotkey" name="hotkey" placeholder="5F5WLLEzDBXQDdTzDYgbQ3d3JKbM15HhPdFuLMmuzcUW5xG2" required>
+                        <input type="text" id="hotkey" name="hotkey" placeholder="Input hotkey address" required>
                     </div>
                     <div class="form-group">
                         <label for="subnet_id">Subnet ID</label>
-                        <input type="number" id="subnet_id" name="subnet_id" placeholder="15" min="1" required>
+                        <input type="number" id="subnet_id" name="subnet_id" placeholder="Input subnet number" min="1" required>
                     </div>
                     <button type="submit" class="register-btn" id="register-submit-btn">Register</button>
                 </form>
@@ -301,7 +301,7 @@
                 <form id="create-hotkey-form" onsubmit="handleCreateHotkey(event)">
                     <div class="form-group">
                         <label for="hotkey_name">Hotkey Name</label>
-                        <input type="text" id="hotkey_name" name="hotkey_name" placeholder="hotkey1" required>
+                        <input type="text" id="hotkey_name" name="hotkey_name" placeholder="Input hotkey name" required>
                     </div>
                     <button type="submit" class="register-btn" id="create-hotkey-submit-btn">Create Hotkey</button>
                 </form>
@@ -324,7 +324,7 @@
                         </div>
                         <div style="margin-top: 12px;">
                             <div class="subnet-input-group">
-                                <input type="number" id="subnet-{{ loop.index0 }}" placeholder="Subnet ID" min="1" style="flex: 1;">
+                                <input type="number" id="subnet-{{ loop.index0 }}" placeholder="Subnet Number" min="1" style="flex: 1;">
                                 <button class="register-btn-card" onclick="registerHotkey('{{ hotkey.ss58_address }}', {{ loop.index0 }}, this)">Register</button>
                             </div>
                         </div>
