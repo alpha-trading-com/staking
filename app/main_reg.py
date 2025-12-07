@@ -19,11 +19,19 @@ app.include_router(router)
 
 
 @app.get("/")
-def read_root(request: fastapi.Request):
-    hotkeys = get_hotkeys("msoon")
+def read_root(request: fastapi.Request, wallet_name: str = "msoon"):
+    hotkeys = get_hotkeys(wallet_name)
     return templates.TemplateResponse(
         "index_reg.html",
-        {"request": request, "wallet_names":["msoon"], "hotkeys": hotkeys}
+        {"request": request, "wallet_names":["msoon"], "hotkeys": hotkeys, "wallet_name": wallet_name}
+    )
+
+@app.get("/wallet_list")
+def wallet_list_page(request: fastapi.Request, wallet_name: str):
+    hotkeys = get_hotkeys(wallet_name)
+    return templates.TemplateResponse(
+        "index_reg.html",
+        {"request": request, "wallet_names":["msoon"], "hotkeys": hotkeys, "wallet_name": wallet_name}
     )
 
 @app.get("/health")

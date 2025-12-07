@@ -1,5 +1,6 @@
 import bittensor as bt
 from bittensor_cli.src.bittensor.utils import get_hotkey_wallets_for_wallet
+from bittensor_cli.src.commands.wallets import new_hotkey
 from app.services.reg import get_hotkeys
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -27,6 +28,20 @@ class RegisterRequest(BaseModel):
 def wallet_list(wallet_name: str):
     hotkeys = get_hotkeys(wallet_name)
     return hotkeys
+
+
+@router.post('/new_hotkey')
+def create_hotkey(wallet_name: str, hotkey_name: str):
+    wallet = bt.wallet(name=wallet_name, hotkey=hotkey_name)
+    wallet.create_new_hotkey(
+        n_words=12,
+        use_password=False,
+        overwrite=False,
+    )
+    return {
+        "success": True,
+        "error": ""
+    }
 
 
 @router.post("/register")
