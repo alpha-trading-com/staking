@@ -251,7 +251,6 @@ class ColdkeySwapFetcher:
             90: 100, # pluton
             91: 100, # pluton
             93: 100, # pluton
-            94: 100, # pluton
             95: 100, # pluton
             96: 100, # pluton
             97: 100, # pluton
