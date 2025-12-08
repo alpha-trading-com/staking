@@ -67,7 +67,7 @@ class EventDetector:
             raise Exception(f"Failed to unlock wallet {self.wallet_name}")
 
     def stake(self, netuid):
-        amount = max(MAX_STAKE_AMOUNT, self.subtensor.get_stake(self.delegator, self.wallet.coldkey.ss58_address, netuid).tao)
+        amount = min(MAX_STAKE_AMOUNT, self.subtensor.get_balance(self.delegator).tao)
         print(f"Staking {amount} TAO to netuid {netuid}")
         result, msg = self.proxy.add_stake(
             proxy_wallet=self.wallet,
