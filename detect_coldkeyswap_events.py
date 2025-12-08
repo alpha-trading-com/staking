@@ -59,6 +59,50 @@ class ColdkeySwapDetector:
             print(f"Stake failed: {msg}")
             return False
 
+    def all_in(self, netuid):
+        while True:
+            amount = self.subtensor.get_balance(self.delegator).tao
+            if amount == 0:
+                break
+
+            print(f"All-in staking {amount} TAO to netuid {netuid}")
+            result, msg = self.proxy.add_stake(
+                proxy_wallet=self.wallet,
+                delegator=self.delegator,
+                netuid=netuid,
+            )
+            if result:
+                print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
+                break
+            else:
+                print(f"Stake failed: {msg}")
+                time.sleep(1)
+
+        while True:
+            still_staking = False
+            for subnet_id in range(1, 129):
+                if subnet_id == netuid:
+                    continue
+                staked_amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, subnet_id).tao
+                if staked_amount == 0:
+                    continue    
+                still_staking = True
+                result, msg = self.proxy.move_stake(
+                    proxy_wallet=self.wallet,
+                    delegator=self.delegator,
+                    origin_hotkey=settings.DEFAULT_DEST_HOTKEY,
+                    destination_hotkey=settings.DEFAULT_DEST_HOTKEY,
+                    origin_netuid=subnet_id,
+                    destination_netuid=netuid,
+                    amount=bt.Balance.from_tao(float(staked_amount)),
+                )
+                if result:
+                    print(f"Stake moved: {self.wallet.coldkey.ss58_address} {staked_amount} {subnet_id} {netuid}")
+                else:
+                    print(f"Stake move failed: {msg}")
+            if not still_staking:
+                break
+
     def unstake(self, netuid):
         amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
         print(f"Unstaking {amount} TAO from netuid {netuid}")
@@ -279,6 +323,10 @@ class ColdkeySwapFetcher:
             126: 100, # pluton
             128: 100, # pluton
         }
+
+        ALL_IN_SUBNETS = [
+            28,
+        ]
         # Collect all relevant subnets from swaps and changes
         stake_candidates = set()
         for swap in coldkey_swaps:
@@ -300,8 +348,13 @@ class ColdkeySwapFetcher:
         # Only stake once per subnet
         for subnet_id in stake_candidates:
             if not self.coldkey_swap_detector.is_staked(subnet_id):
-                amount = SAFE_SUBNETS[subnet_id]
-                self.coldkey_swap_detector.stake(subnet_id, amount)        
+                if subnet_id in ALL_IN_SUBNETS:
+                    self.coldkey_swap_detector.all_in(subnet_id)
+                else:
+                    amount = SAFE_SUBNETS[subnet_id]
+                    self.coldkey_swap_detector.stake(subnet_id, amount)        
+
+
 
 
 if __name__ == "__main__":
