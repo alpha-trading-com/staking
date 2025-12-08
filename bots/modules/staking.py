@@ -6,8 +6,6 @@ from app.core.config import settings
 from app.services.proxy import Proxy
 from utils.logger import logger
 
-
-
 NETWORK = "finney"
 
 class Staking:
@@ -101,6 +99,10 @@ class Staking:
     def unstake(self, netuid):
         amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
         print(f"Unstaking {amount} TAO from netuid {netuid}")
+        if amount == 0:
+            print(f"No stake to unstake from netuid {netuid}")
+            return False
+            
         result, msg = self.proxy.remove_stake(
             proxy_wallet=self.wallet, 
             delegator=self.delegator, 

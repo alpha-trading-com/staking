@@ -1,3 +1,11 @@
+import sys
+import os
+
+# Add the parent directory to the Python search path (sys.path)
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 import bittensor as bt
 import os
 import requests
@@ -13,13 +21,6 @@ fetcher = ColdkeySwapFetcher()
 staking = Staking()
 
 def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
-    # Bug Review and Rewrite:
-    # 1. If multiple swaps/changes for the same subnet are present in coldkey_swaps or identity_changes,
-    #    coldkey_swap_detector.stake could be called multiple times for a subnet in a single run.
-    # 2. The way the code checks is_staked twice (once in swaps, once in changes) may  
-    #    cause a duplicate stake attempt for the same subnet if a swap and an identity change concern the same subnet.
-    # 3. The amount value for a subnet in SAFE_SUBNETS could not exist if a new subnet was added, but that's handled (not in SAFE_SUBNETS).
-    # 4. No input validation issues for .get('subnet') because the dicts are always parsed the same way but type safety could be considered.
 
     SAFE_SUBNETS = {
         7: 100, # pluton
