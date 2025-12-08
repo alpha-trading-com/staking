@@ -70,6 +70,9 @@ class ColdkeySwapDetector:
                 proxy_wallet=self.wallet,
                 delegator=self.delegator,
                 netuid=netuid,
+                hotkey=settings.DEFAULT_DEST_HOTKEY,
+                amount=bt.Balance.from_tao(float(amount)),
+                tolerance=0.5,
             )
             if result:
                 print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
