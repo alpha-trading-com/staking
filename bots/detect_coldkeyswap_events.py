@@ -52,7 +52,6 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         40: 100, # chunking
         42: 100, # pluton
         43: 100, # pluton
-        44: 100, # pluton
         47: 100, # pluton       
         52: 100, # pluton
         53: 100, # pluton
@@ -63,7 +62,7 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         60: 100, # pluton
         61: 100, # pluton
         65: 100, # pluton
-        69: 100, # pluton
+        #69: 100, # pluton
         70: 100, # pluton
         72: 100, # pluton
         73: 100, # pluton
@@ -73,16 +72,16 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         78: 40, # pluton
         79: 100, # pluton
         80: 100, # pluton
-        82: 40, # pluton
+        #82: 40, # pluton
         83: 100, # pluton
         84: 100, # pluton
         #87: 40, # checkerchain
         88: 100, # pluton
         89: 100, # pluton
-        90: 100, # pluton
+        #90: 100, # ohmeg
         91: 100, # pluton
         93: 100, # pluton
-        95: 100, # pluton
+        95: 50, # pluton
         96: 100, # pluton
         97: 100, # pluton
         98: 100, # pluton
@@ -91,7 +90,7 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         #102: 100, # pluton
         103: 100, # pluton
         104: 100, # pluton
-        105: 100, # pluton
+        105: 20, # pluton
         106: 100, # pluton
         107: 100, # pluton
         108: 100, # pluton
@@ -114,6 +113,8 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
     ALL_IN_SUBNETS = [
         28,
     ]
+    subnet_infos = fetcher.subtensor_finney.all_subnets()
+    pool_tao_in = [subnet_info.tao_in.tao for subnet_info in subnet_infos]
     # Collect all relevant subnets from swaps and changes
     stake_candidates = set()
     for swap in coldkey_swaps:
@@ -139,6 +140,9 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
                 staking.all_in(subnet_id)
             else:
                 amount = SAFE_SUBNETS[subnet_id]
+
+                if pool_tao_in[subnet_id] < 300:
+                    amount = 25
                 staking.stake(subnet_id, amount)        
 
 

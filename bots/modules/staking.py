@@ -52,7 +52,7 @@ class Staking:
     def all_in(self, netuid):
         while True:
             amount = self.subtensor.get_balance(self.delegator).tao
-            if amount == 0:
+            if amount < 1:
                 break
 
             print(f"All-in staking {amount} TAO to netuid {netuid}")
@@ -77,7 +77,7 @@ class Staking:
                 if subnet_id == netuid:
                     continue
                 staked_amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, subnet_id).tao
-                if staked_amount == 0:
+                if staked_amount < 1:
                     continue    
                 still_staking = True
                 result, msg = self.proxy.move_stake(
@@ -99,10 +99,10 @@ class Staking:
     def unstake(self, netuid):
         amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
         print(f"Unstaking {amount} TAO from netuid {netuid}")
-        if amount == 0:
+        if amount < 1:
             print(f"No stake to unstake from netuid {netuid}")
             return False
-            
+
         result, msg = self.proxy.remove_stake(
             proxy_wallet=self.wallet, 
             delegator=self.delegator, 
