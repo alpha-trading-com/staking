@@ -20,8 +20,11 @@ from bots.modules.staking import Staking
 fetcher = ColdkeySwapFetcher()
 staking = Staking()
 
+free_balance = staking.subtensor.get_balance(staking.delegator).tao - 0.5
+print(f"Free balance: {free_balance}")
+    
 def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
-
+    global free_balance
     SAFE_SUBNETS = {
         7: 100, # pluton
         10: 100, # pluton
@@ -69,12 +72,13 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         74: 100, # pluton
         76: 100, # pluton
         77: 100, # pluton
-        78: 40, # pluton
+        #78: 40, # pluton
         79: 100, # pluton
         80: 100, # pluton
         #82: 40, # pluton
         83: 100, # pluton
         84: 100, # pluton
+        86: 10,  # _______
         #87: 40, # checkerchain
         88: 100, # pluton
         89: 100, # pluton
@@ -140,10 +144,14 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
                 staking.all_in(subnet_id)
             else:
                 amount = SAFE_SUBNETS[subnet_id]
-
+                    
                 if pool_tao_in[subnet_id] < 300:
                     amount = 25
-                staking.stake(subnet_id, amount)        
+                
+                if amount > free_balance:
+                    amount = free_balance
+                
+                staking.stake_until_success(subnet_id, amount)        
 
 
 if __name__ == "__main__":

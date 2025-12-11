@@ -40,7 +40,7 @@ class Staking:
             netuid=netuid,
             hotkey=settings.DEFAULT_DEST_HOTKEY,
             amount=bt.Balance.from_tao(float(amount)),
-            tolerance=0.5,
+            tolerance=0.9,
         )
         if result:
             print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
@@ -48,6 +48,12 @@ class Staking:
         else:
             print(f"Stake failed: {msg}")
             return False
+
+    def stake_until_success(self, netuid, amount):
+        while not self.is_staked(netuid):
+            self.stake(netuid, amount)
+            time.sleep(1)
+        return True
 
     def all_in(self, netuid):
         while True:
@@ -62,7 +68,7 @@ class Staking:
                 netuid=netuid,
                 hotkey=settings.DEFAULT_DEST_HOTKEY,
                 amount=bt.Balance.from_tao(float(amount)),
-                tolerance=0.5,
+                tolerance=0.9,
             )
             if result:
                 print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
@@ -108,7 +114,7 @@ class Staking:
             delegator=self.delegator, 
             hotkey=settings.DEFAULT_DEST_HOTKEY, 
             amount=bt.Balance.from_tao(float(amount)), 
-            tolerance=0.5,
+            tolerance=0.9,
             netuid=netuid, 
         )
         if result:
