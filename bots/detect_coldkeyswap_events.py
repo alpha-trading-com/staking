@@ -93,7 +93,7 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         101: 100, # pluton
         #102: 100, # pluton
         103: 100, # pluton
-        104: 100, # pluton
+        #104: 100, # pluton
         105: 20, # pluton
         106: 100, # pluton
         107: 100, # pluton
