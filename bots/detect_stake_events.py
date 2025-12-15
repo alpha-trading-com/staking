@@ -14,15 +14,7 @@ from utils.logger import logger
 
 
 COLDKEYS_TO_DETECT = [
-    "5CwqN6oHkZMLedCPrEJqZRaw7d9KRxupKM8BgDQvnmbqBs9K",
-    "5Fge5ZJKCtyoizEN6DWi9US4aMfzEgtCWtBErf4xkpeuUkrQ",
-    "5FntQJYAchxuuh8dwCg9FukPFC9W9rozWV5cDCFLQHAzGbAX",
-    "5FtA2K4dGsLtjy7NTCGxfbnLJ2fSm81wh2GbFEysnBpc67Pi",
-    "5GgPoUukPSPTSXfV1mgsm1t5UqcKZBeaQnba4kd1iDMvhn4z",
-    "5Ev4Fev4csqtcPqvUyewcyPUq3eG5cWK4XgBibfvLdRKgQrC",
-    "5HYSbGSsZYJrvUKP1RgyZAcU5tqC9Lyo6QjKHtfxeiA9fqW7",
-    "5GxpgYfmp9rT9qJjG8fovD2QxsxSQzTxPLoYZQza3brjg7i6",
-    "5CaZNPTVSxZoaDt75BrbN3v4pr217MH8AmAMZC1qqFHHvmTp",
+    "5GH2aUTMRUh1RprCgH4x3tRyCaKeUi5BfmYCfs1NARA8R54n", # const
 ]
 
 SAFE_SUBNETS = [
@@ -218,14 +210,14 @@ def check_stake_events(stake_events):
         netuid_val = int(event['netuid'])
         tao_amount = float(event['amount_tao'])
         coldkey = event['coldkey']
-        if netuid_val not in SAFE_SUBNETS:
-            continue
+        # if netuid_val not in SAFE_SUBNETS:
+        #     continue
 
-        if netuid_val in checked_subnets:
-            continue
+        # if netuid_val in checked_subnets:
+        #     continue
         
         # Green for stake added, red for stake removed (bright)
-        if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT:
+        if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT and tao_amount > 100:
             print(f"Stake added: {coldkey} {tao_amount} {netuid_val}")
             net_uids.append(netuid_val)
 
