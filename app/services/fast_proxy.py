@@ -34,6 +34,7 @@ class FastProxy:
         hotkey: str, 
         amount: Balance, 
         tolerance: float = 0.005,
+        init_runtime: bool = True,
     ) -> tuple[bool, str]:
         """
         Add stake to a subnet.
@@ -64,8 +65,9 @@ class FastProxy:
         else:
             price_with_tolerance = Balance.from_rao(1)
 
-        print(f"price_with_tolerance: {price_with_tolerance}")
-        self.init_runtime()
+        if init_runtime:
+            self.init_runtime()
+
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
             call_function='add_stake_limit',
@@ -77,7 +79,7 @@ class FastProxy:
                 "allow_partial": False,
             }
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
+        _, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
         new_free_balance = self.subtensor.get_balance(
             address=delegator,
         )
@@ -95,6 +97,7 @@ class FastProxy:
         hotkey: str,
         amount: Balance,
         tolerance: float = 0.005,
+        init_runtime: bool = True,
     ) -> tuple[bool, str]:
         """
         Remove stake from a subnet.
@@ -122,7 +125,8 @@ class FastProxy:
             rate_with_tolerance = 1
             price_with_tolerance = 1
         print(f"amount: {amount.rao}")
-        self.init_runtime()
+        if init_runtime:
+            self.init_runtime()
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
             call_function='remove_stake_limit',
@@ -153,6 +157,7 @@ class FastProxy:
         delegator: str,
         hotkey: str,
         netuid: int,
+        init_runtime: bool = True,
     ) -> tuple[bool, str]:
         """
         Do burned register.
@@ -167,7 +172,8 @@ class FastProxy:
         print(f"Delegator: {delegator}")
         print(f"Hotkey: {hotkey}")
         print(f"Netuid: {netuid}")
-        self.init_runtime()
+        if init_runtime:
+            self.init_runtime()
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
             call_function='burned_register',
@@ -191,6 +197,7 @@ class FastProxy:
         origin_netuid: int, 
         destination_netuid: int, 
         amount: Balance, 
+        init_runtime: bool = True,
     ) -> tuple[bool, str]:
         """
         Move stake between validators
@@ -212,7 +219,8 @@ class FastProxy:
         if amount.rao > balance.rao:
             return False, f"Error: Amount to swap is greater than current balance"
 
-        self.init_runtime()
+        if init_runtime:
+            self.init_runtime()
         
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
@@ -225,7 +233,7 @@ class FastProxy:
                 'alpha_amount': amount.rao - 1,
             }
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
+        _, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
         new_balance = self.subtensor.get_stake(
             coldkey_ss58=delegator,
             hotkey_ss58=origin_hotkey,
