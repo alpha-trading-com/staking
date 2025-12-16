@@ -32,3 +32,4 @@ class Settings(BaseModel):
 settings = Settings()
 
 print(f"USE_ERA: {settings.USE_ERA}")
+print(f"USE_MEV_PROTECTION: {settings.USE_MEV_PROTECTION}")
