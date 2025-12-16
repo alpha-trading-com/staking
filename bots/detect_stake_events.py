@@ -17,7 +17,7 @@ from typing import List
 
 from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
-from app.services.proxy import Proxy
+from app.services.fast_proxy import FastProxy
 from utils.logger import logger
 
 
@@ -47,7 +47,7 @@ subtensor = bt.subtensor(NETWORK)
 
 class EventDetector:
 
-    def __init__(self, proxy: Proxy):
+    def __init__(self, proxy: FastProxy):
         self.proxy = proxy
         self.subtensor = bt.subtensor(network=NETWORK)
         self.wallet_name = settings.WALLET_NAMES[0]
@@ -214,6 +214,7 @@ def check_stake_events(stake_events):
     global COLDKEYS_TO_DETECT
     global checked_subnets
     net_uids = []
+    #checked_subnets.append(33)
     for event in stake_events:
         netuid_val = int(event['netuid'])
         tao_amount = float(event['amount_tao'])
@@ -221,8 +222,8 @@ def check_stake_events(stake_events):
         # if netuid_val not in SAFE_SUBNETS:
         #     continue
 
-        # if netuid_val in checked_subnets:
-        #     continue
+        if netuid_val in checked_subnets:
+            continue
         
         # Green for stake added, red for stake removed (bright)
         if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT and tao_amount > 100:
@@ -241,7 +242,7 @@ if __name__ == "__main__":
     # COLDKEYS_TO_DETECT = input("Enter the coldkeys to detect: ").split(",")
     # print(f"Watching Coldkeys: {COLDKEYS_TO_DETECT}")
 
-    proxy = Proxy(network=settings.NETWORK)
+    proxy = FastProxy(network=settings.NETWORK)
     proxy.init_runtime()
     event_detector = EventDetector(proxy)
     
