@@ -4,6 +4,8 @@ from bittensor.core.extrinsics.pallets import SubtensorModule
 from bittensor.core.extrinsics.proxy import proxy_extrinsic
 from bittensor.utils.balance import Balance
 
+from app.core.config import settings
+
 
 class Proxy:
     def __init__(self, network: str, use_era: bool = True):
@@ -25,7 +27,7 @@ class Proxy:
         hotkey: str,
         amount: Balance,
         tolerance: float = 0.005,
-        mev_protection: bool = False,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         """
         Add stake to a subnet.
@@ -95,7 +97,7 @@ class Proxy:
         hotkey: str,
         amount: Balance,
         tolerance: float = 0.005,
-        mev_protection: bool = False,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         """
         Remove stake from a subnet.
@@ -164,7 +166,7 @@ class Proxy:
         delegator: str,
         hotkey: str,
         netuid: int,
-        mev_protection: bool = False,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         """
         Do burned register.
@@ -214,7 +216,7 @@ class Proxy:
         origin_netuid: int,
         destination_netuid: int,
         amount: Balance,
-        mev_protection: bool = True,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         """
         Move stake between validators
