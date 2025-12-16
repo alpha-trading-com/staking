@@ -27,6 +27,7 @@ class Proxy:
         hotkey: str,
         amount: Balance,
         tolerance: float = 0.005,
+        use_era: bool = settings.USE_ERA,   
         mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         """
@@ -39,6 +40,7 @@ class Proxy:
             hotkey: Hotkey address
             amount: Amount to stake
             tolerance: Tolerance for stake amount
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
             mev_protection: Whether to use MEV protection (default: True)
         """
         free_balance = self.subtensor.get_balance(
@@ -77,6 +79,7 @@ class Proxy:
             force_proxy_type=ProxyType.Staking,
             call=call,
             mev_protection=mev_protection,
+            period = 1 if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
@@ -98,6 +101,7 @@ class Proxy:
         amount: Balance,
         tolerance: float = 0.005,
         mev_protection: bool = settings.USE_MEV_PROTECTION,
+        use_era: bool = settings.USE_ERA,
     ) -> tuple[bool, str]:
         """
         Remove stake from a subnet.
@@ -109,6 +113,7 @@ class Proxy:
             hotkey: Hotkey address
             amount: Amount to unstake
             tolerance: Tolerance for stake amount
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
             mev_protection: Whether to use MEV protection (default: True)
         """
         subnet_info = self.subtensor.subnet(netuid)
@@ -148,6 +153,7 @@ class Proxy:
             force_proxy_type=ProxyType.Staking,
             call=call,
             mev_protection=mev_protection,
+            period = 1 if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
@@ -167,6 +173,7 @@ class Proxy:
         hotkey: str,
         netuid: int,
         mev_protection: bool = settings.USE_MEV_PROTECTION,
+        use_era: bool = settings.USE_ERA,
     ) -> tuple[bool, str]:
         """
         Do burned register.
@@ -176,6 +183,7 @@ class Proxy:
             delegator: Delegator address
             hotkey: Hotkey address
             netuid: Subnet ID
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
             mev_protection: Whether to use MEV protection (default: True)
         """
         print(f"Proxy wallet: {proxy_wallet}")
@@ -199,6 +207,7 @@ class Proxy:
             force_proxy_type=ProxyType.Registration,
             call=call,
             mev_protection=mev_protection,
+            period = 1 if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
@@ -216,6 +225,7 @@ class Proxy:
         origin_netuid: int,
         destination_netuid: int,
         amount: Balance,
+        use_era: bool = settings.USE_ERA,
         mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         """
@@ -229,6 +239,7 @@ class Proxy:
             origin_netuid: Source subnet ID
             destination_netuid: Destination subnet ID
             amount: Amount to swap
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
             mev_protection: Whether to use MEV protection (default: True)
         """
         balance = self.subtensor.get_stake(
@@ -253,11 +264,12 @@ class Proxy:
         # Execute through proxy
         response = proxy_extrinsic(
             subtensor=self.subtensor,
-            wallet=proxy_wallet,
+            wallet=proxy_wallet, 
             real_account_ss58=delegator,
             force_proxy_type=ProxyType.Staking,
             call=call,
             mev_protection=mev_protection,
+            period = 1 if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
