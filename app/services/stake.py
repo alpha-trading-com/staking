@@ -62,7 +62,9 @@ class StakeService:
         dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
         rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
         min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
-        retries: int = settings.DEFAULT_RETRIES
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> Dict[str, Any]:
         """
         Execute staking operation with retry mechanism and error handling.
@@ -75,7 +77,8 @@ class StakeService:
             rate_tolerance: Tolerance for rate calculations
             min_tolerance_staking: Whether to use minimum tolerance
             retries: Number of retry attempts
-            
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
+            mev_protection: Whether to use MEV protection (default: True)
         Returns:
             Dict containing success status, result, and min_tolerance
         """ 
@@ -107,6 +110,8 @@ class StakeService:
                     netuid=netuid,
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
+                    use_era=use_era,
+                    mev_protection=mev_protection,
                 )
                 
                 if result:
@@ -130,7 +135,9 @@ class StakeService:
         dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
         rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
         min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
-        retries: int = settings.DEFAULT_RETRIES
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> Dict[str, Any]:
         """
         Execute unstaking operation with retry mechanism and error handling.
@@ -143,7 +150,8 @@ class StakeService:
             rate_tolerance: Tolerance for rate calculations
             min_tolerance_unstaking: Whether to use minimum tolerance
             retries: Number of retry attempts
-            
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
+            mev_protection: Whether to use MEV protection (default: True)
         Returns:
             Dict containing success status, result, and min_tolerance
         """ 
@@ -192,6 +200,8 @@ class StakeService:
                     amount=amount_balance,
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
+                    use_era=use_era,
+                    mev_protection=mev_protection,
                 )
                 if result:
                     success = True
@@ -206,13 +216,15 @@ class StakeService:
             "error": msg
         }
     
-    def burned_register(self, wallet_name: str, hotkey: str, netuid: int) -> Dict[str, Any]:
+    def burned_register(self, wallet_name: str, hotkey: str, netuid: int, use_era: bool = settings.USE_ERA, mev_protection: bool = settings.USE_MEV_PROTECTION) -> Dict[str, Any]:
         """
         Do burned register.
         
         Args:
             hotkey: Hotkey address
             netuid: Subnet ID
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
+            mev_protection: Whether to use MEV protection (default: True)
         """
         print(f"Wallet name: {wallet_name}")
         wallet, delegator = self.wallets[wallet_name]
@@ -225,6 +237,8 @@ class StakeService:
             delegator=delegator,
             hotkey=hotkey,
             netuid=netuid,
+            use_era=use_era,
+            mev_protection=mev_protection,
         )
         return {
             "success": result,
@@ -239,10 +253,22 @@ class StakeService:
         amount: Optional[float] = None, 
         origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY, 
         destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY, 
-        retries: int = settings.DEFAULT_RETRIES
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA,
+        mev_protection: bool = settings.USE_MEV_PROTECTION,
     ) -> Dict[str, Any]:
         """
         Execute move stake operation with retry mechanism and error handling.
+        Args:
+            wallet_name: Name of the wallet to use
+            origin_netuid: Source subnet ID
+            destination_netuid: Destination subnet ID
+            amount: Amount to swap (if None, swaps all available)
+            origin_hotkey: Source hotkey address
+            destination_hotkey: Destination hotkey address
+            retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation (default: True)
+            mev_protection: Whether to use MEV protection (default: True)
         """
         wallet, delegator = self.wallets[wallet_name]
 
@@ -270,6 +296,8 @@ class StakeService:
                     destination_hotkey=destination_hotkey,
                     origin_netuid=origin_netuid,
                     destination_netuid=destination_netuid,
+                    use_era=use_era,
+                    mev_protection=mev_protection,
                 )
                 if result:
                     success = True

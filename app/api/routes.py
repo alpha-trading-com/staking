@@ -37,6 +37,8 @@ def stake(
     rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
     min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
     retries: int = settings.DEFAULT_RETRIES,
+    use_era: bool = settings.USE_ERA,
+    mev_protection: bool = settings.USE_MEV_PROTECTION,
     username: str = Depends(get_current_username)
 ):
     # Validate retries parameter
@@ -57,7 +59,9 @@ def stake(
         dest_hotkey=dest_hotkey,
         rate_tolerance=rate_tolerance,
         min_tolerance_staking=min_tolerance_staking,
-        retries=retries
+        retries=retries,
+        use_era=use_era,
+        mev_protection=mev_protection,
     )
 
 
@@ -70,6 +74,8 @@ def unstake(
     rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
     min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
     retries: int = settings.DEFAULT_RETRIES,
+    use_era: bool = settings.USE_ERA,
+    mev_protection: bool = settings.USE_MEV_PROTECTION,
     username: str = Depends(get_current_username)
 ):
     # Validate retries parameter
@@ -90,7 +96,9 @@ def unstake(
         dest_hotkey=dest_hotkey,
         rate_tolerance=rate_tolerance,
         min_tolerance_unstaking=min_tolerance_unstaking,
-        retries=retries
+        retries=retries,
+        use_era=use_era,
+        mev_protection=mev_protection,
     )
 
 @router.get("/move_stake")
@@ -102,6 +110,8 @@ def move_stake(
     origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
     destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
     retries: int = settings.DEFAULT_RETRIES,
+    use_era: bool = settings.USE_ERA,
+    mev_protection: bool = settings.USE_MEV_PROTECTION,
     username: str = Depends(get_current_username)
 ):
     # Validate retries parameter
@@ -115,6 +125,8 @@ def move_stake(
         destination_hotkey=destination_hotkey,
         origin_netuid=origin_netuid,
         destination_netuid=destination_netuid,
-        retries=retries
+        retries=retries,
+        use_era=use_era,
+        mev_protection=mev_protection,
     )
 
