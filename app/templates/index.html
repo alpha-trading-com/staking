@@ -251,6 +251,16 @@
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="stakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
                 </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="stakeUseEra" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="stakeUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="stakeMevProtection" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="stakeMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
+                </div>
                 <button onclick="stake()" class="btn">Stake</button>
             </div>
         </div>
@@ -289,6 +299,16 @@
                 <div class="input-group">
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="unstakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="unstakeUseEra" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="unstakeUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="unstakeMevProtection" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="unstakeMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
                 </div>
                 <button onclick="unstake()" class="btn btn-danger">Unstake</button>
             </div>
@@ -335,6 +355,16 @@
                 <div class="input-group">
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="moveRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="moveUseEra" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="moveUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="moveMevProtection" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="moveMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
                 </div>
 
                 <button onclick="moveStake()" class="btn">Move Stake</button>
@@ -459,6 +489,8 @@
             const validatorHotkey = document.getElementById('stakeValidatorHotkey').value;
             const minToleranceStaking = document.getElementById('minToleranceStaking').checked;
             const retries = document.getElementById('stakeRetries').value;
+            const useEra = document.getElementById('stakeUseEra').checked;
+            const mevProtection = document.getElementById('stakeMevProtection').checked;
 
             if (!walletName) {
                 alert('Please select a wallet');
@@ -473,7 +505,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}`;
+                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (retries) {
                     url += `&retries=${retries}`;
                 }
@@ -498,6 +530,8 @@
             const rateTolerance = document.getElementById('unstakeRateTolerance').value;
             const minToleranceUnstaking = document.getElementById('minToleranceUnstaking').checked;
             const retries = document.getElementById('unstakeRetries').value;
+            const useEra = document.getElementById('unstakeUseEra').checked;
+            const mevProtection = document.getElementById('unstakeMevProtection').checked;
 
             if (!walletName) {
                 alert('Please select a wallet');
@@ -513,7 +547,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}`;
+                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (amount) {
                     url += `&amount=${amount}`;
                 }
@@ -540,6 +574,8 @@
             const originHotkey = document.getElementById('originHotkey').value;
             const destinationHotkey = document.getElementById('destinationHotkey').value;
             const retries = document.getElementById('moveRetries').value;
+            const useEra = document.getElementById('moveUseEra').checked;
+            const mevProtection = document.getElementById('moveMevProtection').checked;
 
             if (!walletName || !originNetuid || !destinationNetuid) {
                 alert('Please fill out wallet name, origin netuid, and destination netuid.');
@@ -552,7 +588,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}`;
+                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (amount) url += `&amount=${amount}`;
                 if (retries) url += `&retries=${retries}`;
 
@@ -644,10 +680,34 @@
             }
         }
 
+        // Sync use_era checkboxes across all tabs
+        function syncUseEra(checked) {
+            document.getElementById('stakeUseEra').checked = checked;
+            document.getElementById('unstakeUseEra').checked = checked;
+            document.getElementById('moveUseEra').checked = checked;
+        }
+
+        // Sync mev_protection checkboxes across all tabs
+        function syncMevProtection(checked) {
+            document.getElementById('stakeMevProtection').checked = checked;
+            document.getElementById('unstakeMevProtection').checked = checked;
+            document.getElementById('moveMevProtection').checked = checked;
+        }
+
         // Call this function when the page loads to set initial state
         document.addEventListener('DOMContentLoaded', function() {
             toggleRateTolerance();
             toggleUnstakeRateTolerance();
+
+            // Add event listeners for syncing use_era checkboxes
+            document.getElementById('stakeUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+            document.getElementById('unstakeUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+            document.getElementById('moveUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+
+            // Add event listeners for syncing mev_protection checkboxes
+            document.getElementById('stakeMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+            document.getElementById('unstakeMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+            document.getElementById('moveMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
         });
     </script>
 </body>
