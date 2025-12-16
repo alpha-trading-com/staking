@@ -43,15 +43,15 @@ checked_subnets = []
 NETWORK = "finney"
 MAX_STAKE_AMOUNT = 1
 #NETWORK = "ws://161.97.128.68:9944"
-subtensor = bt.subtensor(NETWORK)
+subtensor = bt.Subtensor(NETWORK)
 
 class EventDetector:
 
     def __init__(self, proxy: FastProxy):
         self.proxy = proxy
-        self.subtensor = bt.subtensor(network=NETWORK)
+        self.subtensor = bt.Subtensor(network=NETWORK)
         self.wallet_name = settings.WALLET_NAMES[0]
-        self.wallet = bt.wallet(name=self.wallet_name)
+        self.wallet = bt.Wallet(name=self.wallet_name)
         self.delegator = settings.DELEGATORS[settings.WALLET_NAMES.index(self.wallet_name)]
         self.unlock_wallet()
 

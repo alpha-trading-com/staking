@@ -12,9 +12,9 @@ class Staking:
     def __init__(self):
         self.proxy = Proxy(network=NETWORK)
         self.proxy.init_runtime()
-        self.subtensor = bt.subtensor(network=NETWORK)
+        self.subtensor = bt.Subtensor(network=NETWORK)
         self.wallet_name = settings.WALLET_NAMES[0]
-        self.wallet = bt.wallet(name=self.wallet_name)
+        self.wallet = bt.Wallet(name=self.wallet_name)
         self.delegator = settings.DELEGATORS[settings.WALLET_NAMES.index(self.wallet_name)]
         self.unlock_wallet()
 
