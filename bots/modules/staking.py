@@ -41,6 +41,8 @@ class Staking:
             hotkey=settings.DEFAULT_DEST_HOTKEY,
             amount=bt.Balance.from_tao(float(amount)),
             tolerance=0.9,
+            use_era=True,
+            mev_protection=True,
         )
         if result:
             print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
@@ -69,6 +71,8 @@ class Staking:
                 hotkey=settings.DEFAULT_DEST_HOTKEY,
                 amount=bt.Balance.from_tao(float(amount)),
                 tolerance=0.9,
+                use_era=True,
+                mev_protection=True,
             )
             if result:
                 print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
@@ -116,6 +120,8 @@ class Staking:
             amount=bt.Balance.from_tao(float(amount)), 
             tolerance=0.9,
             netuid=netuid, 
+            use_era=True,
+            mev_protection=True,
         )
         if result:
             print(f"Stake removed: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
