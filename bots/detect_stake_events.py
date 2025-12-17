@@ -19,6 +19,7 @@ from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
 from app.services.fast_proxy import FastProxy
 from utils.logger import logger
+from bots.modules.staking import Staking
 
 
 COLDKEYS_TO_DETECT = [
@@ -44,67 +45,7 @@ NETWORK = "finney"
 MAX_STAKE_AMOUNT = 1
 #NETWORK = "ws://161.97.128.68:9944"
 subtensor = bt.Subtensor(NETWORK)
-
-class EventDetector:
-
-    def __init__(self, proxy: FastProxy):
-        self.proxy = proxy
-        self.subtensor = bt.Subtensor(network=NETWORK)
-        self.wallet_name = settings.WALLET_NAMES[0]
-        self.wallet = bt.Wallet(name=self.wallet_name)
-        self.delegator = settings.DELEGATORS[settings.WALLET_NAMES.index(self.wallet_name)]
-        self.unlock_wallet()
-
-    def unlock_wallet(self):
-        for i in range(3):
-            try:
-                self.wallet.unlock_coldkey()
-                break
-            except Exception as e:
-                print(f"Error unlocking wallet {self.wallet_name}: {e}")
-                continue
-        if i == 2:
-            raise Exception(f"Failed to unlock wallet {self.wallet_name}")
-
-    def stake(self, netuid):
-        amount = min(MAX_STAKE_AMOUNT, self.subtensor.get_balance(self.delegator).tao)
-        print(f"Staking {amount} TAO to netuid {netuid}")
-        result, msg = self.proxy.add_stake(
-            proxy_wallet=self.wallet,
-            delegator=self.delegator,
-            netuid=netuid,
-            hotkey=settings.DEFAULT_DEST_HOTKEY,
-            amount=bt.Balance.from_tao(float(amount)),
-            tolerance=0.9,
-            use_era=True,
-            mev_protection=True,
-        )
-        if result:
-            print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
-            return True
-        else:
-            print(f"Stake failed: {msg}")
-            return False
-
-    def unstake(self, netuid):
-        amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
-        print(f"Unstaking {amount} TAO from netuid {netuid}")
-        result, msg = self.proxy.remove_stake(
-            proxy_wallet=self.wallet, 
-            delegator=self.delegator, 
-            hotkey=settings.DEFAULT_DEST_HOTKEY, 
-            amount=bt.Balance.from_tao(float(amount)), 
-            tolerance=0.5,
-            netuid=netuid, 
-            use_era=True,
-            mev_protection=True,
-        )
-        if result:
-            print(f"Stake removed: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
-            return True
-        else:
-            print(f"Unstake failed: {msg}")
-            return False
+staking = Staking()
 
 
 def extract_stake_events_from_data(events_data):
@@ -240,16 +181,12 @@ def check_stake_events(stake_events):
 if __name__ == "__main__":    
     checked_subnets.clear()
     
-    MAX_STAKE_AMOUNT = int(input("Enter the max stake amount: "))
-    print(f"Max stake amount: {MAX_STAKE_AMOUNT}")
+    max_stake_amount = int(input("Enter the max stake amount: "))
+    print(f"Max stake amount: {max_stake_amount}")
 
     # COLDKEYS_TO_DETECT = input("Enter the coldkeys to detect: ").split(",")
     # print(f"Watching Coldkeys: {COLDKEYS_TO_DETECT}")
 
-    proxy = FastProxy(network=settings.NETWORK)
-    proxy.init_runtime()
-    event_detector = EventDetector(proxy)
-    
     while True:
         block_number = subtensor.get_current_block()
         
@@ -258,10 +195,10 @@ if __name__ == "__main__":
         
         print(f"==============Block number: {block_number}==============")
         stake_events = extract_stake_events_from_data(events)
-        netuid_val = check_stake_events(stake_events)
+        netuid_val = check_stake_events(stake_events, max_stake_amount)
         if len(netuid_val) > 0:
             for netuid in netuid_val:
-                result = event_detector.stake(netuid)
+                result = staking.stake(netuid)
                 if result:
                     print(f"Stake added successfully: {netuid}")
                 else:
