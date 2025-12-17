@@ -23,7 +23,7 @@ from bots.modules.staking import Staking
 
 
 COLDKEYS_TO_DETECT = [
-    "5GH2aUTMRUh1RprCgH4x3tRyCaKeUi5BfmYCfs1NARA8R54n", # const
+    "5FvVQs72yKVHHwT8g7ovwjbD7rYnmEXP2DLpeQXnK5dqF8RJ", # const
 ]
 
 SAFE_SUBNETS = [
@@ -42,7 +42,6 @@ checked_subnets = []
 
 
 NETWORK = "finney"
-MAX_STAKE_AMOUNT = 1
 #NETWORK = "ws://161.97.128.68:9944"
 subtensor = bt.Subtensor(NETWORK)
 staking = Staking()
@@ -171,7 +170,7 @@ def check_stake_events(stake_events):
             continue
         
         # Green for stake added, red for stake removed (bright)
-        if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT and tao_amount > 100:
+        if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT and tao_amount > 1:
             print(f"Stake added: {coldkey} {tao_amount} {netuid_val}")
             net_uids.append(netuid_val)
 
@@ -195,10 +194,10 @@ if __name__ == "__main__":
         
         print(f"==============Block number: {block_number}==============")
         stake_events = extract_stake_events_from_data(events)
-        netuid_val = check_stake_events(stake_events, max_stake_amount)
+        netuid_val = check_stake_events(stake_events)
         if len(netuid_val) > 0:
             for netuid in netuid_val:
-                result = staking.stake(netuid)
+                result = staking.stake(netuid, max_stake_amount)
                 if result:
                     print(f"Stake added successfully: {netuid}")
                 else:
