@@ -3,15 +3,14 @@ import time
 
 from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
-from app.services.proxy import Proxy
+from app.services.fast_proxy import FastProxy
 from utils.logger import logger
 
 NETWORK = "finney"
 
 class Staking:
     def __init__(self):
-        self.proxy = Proxy(network=NETWORK)
-        self.proxy.init_runtime()
+        self.proxy = FastProxy(network=NETWORK)
         self.subtensor = bt.Subtensor(network=NETWORK)
         self.wallet_name = settings.WALLET_NAMES[0]
         self.wallet = bt.Wallet(name=self.wallet_name)

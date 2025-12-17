@@ -7,7 +7,7 @@ from bittensor.utils.balance import Balance
 from app.core.config import settings
 
 
-class Proxy:
+class FastProxy:
     def __init__(self, network: str, use_era: bool = True):
         """
         Initialize the Proxy object.
