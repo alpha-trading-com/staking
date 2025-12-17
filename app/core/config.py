@@ -19,6 +19,7 @@ class Settings(BaseModel):
     DEFAULT_MIN_TOLERANCE: bool = False
     DEFAULT_RETRIES: int = 1
     DEFAULT_DEST_HOTKEY: str = ROUND_TABLE_HOTKEY
+    DEFAULT_PERIOD: int = 8
     USE_MEV_PROTECTION: bool = os.getenv("USE_MEV_PROTECTION", "true").lower() == "true"
     USE_ERA: bool = os.getenv("USE_ERA", "true").lower() == "true"
     

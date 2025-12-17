@@ -18,7 +18,11 @@ class Proxy:
         """
         self.network = network
         self.subtensor = bt.Subtensor(network=network)
+        self.proxy_subtensor = bt.Subtensor(network=network)
 
+    def init_proxy_subtensor(self):
+        self.proxy_subtensor = bt.Subtensor(network=self.network)
+            
     def add_stake(
         self,
         proxy_wallet: bt.Wallet,
@@ -58,12 +62,12 @@ class Proxy:
             price_with_tolerance = subnet_info.price.rao * (1 + tolerance)
         else:
             rate_with_tolerance = "1"
-            price_with_tolerance = 1
+            price_with_tolerance = 10000000000000000000
 
         print(f"price_with_tolerance: {price_with_tolerance}")
-
+        self.init_proxy_subtensor()
         # Create the inner call
-        call = SubtensorModule(self.subtensor).add_stake_limit(
+        call = SubtensorModule(self.proxy_subtensor).add_stake_limit(
             netuid=netuid,
             hotkey=hotkey,
             amount_staked=amount.rao,
@@ -73,13 +77,13 @@ class Proxy:
 
         # Execute through proxy
         response = proxy_extrinsic(
-            subtensor=self.subtensor,
+            subtensor=self.proxy_subtensor,
             wallet=proxy_wallet,
             real_account_ss58=delegator,
             force_proxy_type=ProxyType.Staking,
             call=call,
             mev_protection=mev_protection,
-            period = 1 if use_era else None,
+            period = settings.DEFAULT_PERIOD if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
@@ -133,7 +137,8 @@ class Proxy:
         print(f"amount: {amount.rao}")
 
         # Create the inner call
-        call = SubtensorModule(self.subtensor).remove_stake_limit(
+        self.init_proxy_subtensor()
+        call = SubtensorModule(self.proxy_subtensor).remove_stake_limit(
             netuid=netuid,
             hotkey=hotkey,
             amount_unstaked=amount.rao - 1,
@@ -147,13 +152,13 @@ class Proxy:
 
         # Execute through proxy
         response = proxy_extrinsic(
-            subtensor=self.subtensor,
+            subtensor=self.proxy_subtensor,
             wallet=proxy_wallet,
             real_account_ss58=delegator,
             force_proxy_type=ProxyType.Staking,
             call=call,
             mev_protection=mev_protection,
-            period = 1 if use_era else None,
+            period = settings.DEFAULT_PERIOD if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
@@ -192,7 +197,8 @@ class Proxy:
         print(f"Netuid: {netuid}")
 
         # Create the inner call
-        call = SubtensorModule(self.subtensor).burned_register(
+        self.init_proxy_subtensor()
+        call = SubtensorModule(self.proxy_subtensor).burned_register(
             netuid=netuid,
             hotkey=hotkey,
         )
@@ -201,13 +207,13 @@ class Proxy:
 
         # Execute through proxy
         response = proxy_extrinsic(
-            subtensor=self.subtensor,
+            subtensor=self.proxy_subtensor,
             wallet=proxy_wallet,
             real_account_ss58=delegator,
             force_proxy_type=ProxyType.Registration,
             call=call,
             mev_protection=mev_protection,
-            period = 1 if use_era else None,
+            period = settings.DEFAULT_PERIOD if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
@@ -253,7 +259,8 @@ class Proxy:
             return False, "Error: Amount to swap is greater than current balance"
 
         # Create the inner call
-        call = SubtensorModule(self.subtensor).move_stake(
+        self.init_proxy_subtensor()
+        call = SubtensorModule(self.proxy_subtensor).move_stake(
             origin_netuid=origin_netuid,
             origin_hotkey_ss58=origin_hotkey,
             destination_netuid=destination_netuid,
@@ -263,13 +270,13 @@ class Proxy:
 
         # Execute through proxy
         response = proxy_extrinsic(
-            subtensor=self.subtensor,
+            subtensor=self.proxy_subtensor,
             wallet=proxy_wallet, 
             real_account_ss58=delegator,
             force_proxy_type=ProxyType.Staking,
             call=call,
             mev_protection=mev_protection,
-            period = 1 if use_era else None,
+            period = settings.DEFAULT_PERIOD if use_era else None,
             wait_for_inclusion=True,
             wait_for_finalization=False,
         )
