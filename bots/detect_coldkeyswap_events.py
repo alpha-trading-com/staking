@@ -113,6 +113,19 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         126: 100, # pluton
         128: 100, # pluton
     }
+    SAFE_SUBNETS_SLEEP = {
+        7: 100, 
+        21: 100, 
+        25: 100, 
+        28: 100, 
+        40: 100, 
+        69: 100, 
+        82: 100, 
+        95: 100, 
+        101: 100, 
+        107: 100, 
+        126: 100, 
+    }
 
     ALL_IN_SUBNETS = [
         28,
