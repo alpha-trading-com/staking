@@ -7,9 +7,6 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 import bittensor as bt
-import os
-import requests
-
 from bots.modules.coldkey_swap_detector import ColdkeySwapFetcher
 from bots.modules.staking import Staking
 

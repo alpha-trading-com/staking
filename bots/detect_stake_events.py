@@ -7,20 +7,8 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 import bittensor as bt
-import threading
-import requests
-import re
-import sys
-import os
-import time
-from typing import List
 
-from app.constants import ROUND_TABLE_HOTKEY
-from app.core.config import settings
-from app.services.fast_proxy import FastProxy
-from utils.logger import logger
 from bots.modules.staking import Staking
-
 from bots.constants import (
     NETWORK,
     COLDKEYS_TO_DETECT,
