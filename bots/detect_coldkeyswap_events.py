@@ -20,11 +20,13 @@ from bots.modules.staking import Staking
 fetcher = ColdkeySwapFetcher()
 staking = Staking()
 
+is_sleeping = False
 free_balance = staking.subtensor.get_balance(staking.delegator).tao - 0.5
 print(f"Free balance: {free_balance}")
     
 def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
-    global free_balance
+    print(f"Is sleeping: {is_sleeping}")
+    print(f"Free balance: {free_balance}")
     SAFE_SUBNETS = {
         7: 100, # pluton
         10: 100, # pluton
@@ -127,6 +129,8 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
         126: 100, 
     }
 
+    safe_subnets = SAFE_SUBNETS if not is_sleeping else SAFE_SUBNETS_SLEEP
+
     ALL_IN_SUBNETS = [
         28,
     ]
@@ -139,7 +143,7 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
             subnet_id = int(swap['subnet'])
         except (KeyError, ValueError):
             continue
-        if subnet_id in SAFE_SUBNETS:
+        if subnet_id in safe_subnets:
             stake_candidates.add(subnet_id)
 
     for change in identity_changes:
@@ -147,7 +151,7 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
             subnet_id = int(change['subnet'])
         except (KeyError, ValueError):
             continue
-        if subnet_id in SAFE_SUBNETS:
+        if subnet_id in safe_subnets:
             stake_candidates.add(subnet_id)
 
     # Only stake once per subnet
@@ -156,7 +160,7 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
             if subnet_id in ALL_IN_SUBNETS:
                 staking.all_in(subnet_id)
             else:
-                amount = SAFE_SUBNETS[subnet_id]
+                amount = safe_subnets[subnet_id]
                     
                 if pool_tao_in[subnet_id] < 300:
                     amount = 25
@@ -168,4 +172,10 @@ def stake_when_coldkey_swaps(coldkey_swaps, identity_changes):
 
 
 if __name__ == "__main__":
+    confirm = input("Are you sleeping? (y/n): ")
+    if confirm == "y":
+        is_sleeping = True
+    else:
+        is_sleeping = False
+    print(f"Is sleeping: {is_sleeping}")
     fetcher.run(stake_when_coldkey_swaps)
