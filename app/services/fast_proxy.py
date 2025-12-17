@@ -55,6 +55,10 @@ class FastProxy:
         if not subnet_info:
             return False, f"Subnet with netuid {netuid} does not exist"
 
+        if free_balance.rao < amount.rao:
+            amount = free_balance
+            print(f"Amount is greater than free balance, setting amount to free balance: {amount.rao}")
+
         if subnet_info.is_dynamic:
             rate = 1 / subnet_info.price.tao or 1
             _rate_with_tolerance = rate * (1 + tolerance)  # Rate only for display

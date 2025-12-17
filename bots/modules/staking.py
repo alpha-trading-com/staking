@@ -16,6 +16,13 @@ class Staking:
         self.wallet = bt.Wallet(name=self.wallet_name)
         self.delegator = settings.DELEGATORS[settings.WALLET_NAMES.index(self.wallet_name)]
         self.unlock_wallet()
+        self.log_wallet_balance()
+
+    def log_wallet_balance(self):
+        balance = self.subtensor.get_balance(
+            address=self.delegator,
+        )
+        print(f"Wallet balance: {balance.tao}")
 
     def unlock_wallet(self):
         for i in range(3):

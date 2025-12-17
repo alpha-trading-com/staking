@@ -21,31 +21,13 @@ from app.services.fast_proxy import FastProxy
 from utils.logger import logger
 from bots.modules.staking import Staking
 
+from bots.constants import (
+    NETWORK,
+    COLDKEYS_TO_DETECT,
+    SAFE_SUBNETS_STAKE,
+)
 
-COLDKEYS_TO_DETECT = [
-    "5FvVQs72yKVHHwT8g7ovwjbD7rYnmEXP2DLpeQXnK5dqF8RJ", # const
-]
-
-SAFE_SUBNETS = [
-    121,
-    71,
-    46, 
-    127,
-    76,
-    18,
-    91,
-    16,
-    107,
-]
-
-checked_subnets = []
-
-
-NETWORK = "finney"
-#NETWORK = "ws://161.97.128.68:9944"
-subtensor = bt.Subtensor(NETWORK)
 staking = Staking()
-
 
 def extract_stake_events_from_data(events_data):
     """
@@ -155,19 +137,13 @@ def extract_stake_events_from_data(events_data):
 
 
 def check_stake_events(stake_events):
-    global COLDKEYS_TO_DETECT
-    global checked_subnets
     net_uids = []
-    #checked_subnets.append(33)
     for event in stake_events:
         netuid_val = int(event['netuid'])
         tao_amount = float(event['amount_tao'])
         coldkey = event['coldkey']
-        # if netuid_val not in SAFE_SUBNETS:
+        # if netuid_val not in SAFE_SUBNETS_STAKE:
         #     continue
-
-        if netuid_val in checked_subnets:
-            continue
         
         # Green for stake added, red for stake removed (bright)
         if event['type'] == 'StakeAdded' and coldkey in COLDKEYS_TO_DETECT and tao_amount > 1:
@@ -178,14 +154,13 @@ def check_stake_events(stake_events):
 
 
 if __name__ == "__main__":    
-    checked_subnets.clear()
     
     max_stake_amount = int(input("Enter the max stake amount: "))
     print(f"Max stake amount: {max_stake_amount}")
 
     # COLDKEYS_TO_DETECT = input("Enter the coldkeys to detect: ").split(",")
     # print(f"Watching Coldkeys: {COLDKEYS_TO_DETECT}")
-
+    subtensor = bt.Subtensor(NETWORK)
     while True:
         block_number = subtensor.get_current_block()
         
@@ -202,6 +177,5 @@ if __name__ == "__main__":
                     print(f"Stake added successfully: {netuid}")
                 else:
                     print(f"Stake failed to add: {netuid}")
-                checked_subnets.append(netuid)
             continue;
         subtensor.wait_for_block()
