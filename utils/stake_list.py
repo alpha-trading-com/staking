@@ -12,14 +12,13 @@ def get_amount(tao_in, alpha_in, alpha_unstake_amount):
     return tao_in - tao_in_after
 
 
-def get_stake_list(subtensor, wallet_ss58):
-    stake_infos = subtensor.get_stake_for_coldkey(
-        coldkey_ss58=wallet_ss58
+def get_stake_list(subtensor: bt.Subtensor, wallet_ss58: str):
+    stake_infos = subtensor.get_stake_info_for_coldkey(
+        coldkey_ss58=wallet_ss58,
     )
     subnet_infos = subtensor.all_subnets()
 
-    # Create a Rich Table to display the stake_infos in a readable format
-
+    # Create a Rich Table to display the stake_infos in a readable format    
     table = Table(title="Stake Infos", show_lines=True)
     table.add_column("NetUID", justify="right", no_wrap=True)
     table.add_column("Subnet Name")
