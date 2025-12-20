@@ -19,7 +19,7 @@ SAFE_SUBNETS_STAKE = [
 
 
 SAFE_SUBNETS = {
-    7: 100, # pluton
+    7: 150, # pluton
     10: 100, # pluton
     11: 100, # pluton
     12: 100, # pluton
@@ -30,10 +30,10 @@ SAFE_SUBNETS = {
     18: 100, # pluton
     19: 100, # pluton
     20: 100, # pluton
-    21: 100, # pluton
+    21: 150, # pluton
     22: 100, # pluton
     24: 100, # pluton
-    25: 100, # pluton
+    25: 150, # pluton
     26: 100, # pluton
     27: 100, # pluton
     28: 100, # fish
@@ -45,8 +45,7 @@ SAFE_SUBNETS = {
     36: 100, # pluton
     37: 100, # pluton
     38: 100, # pluton
-    40: 100, # chunking
-    42: 100, # pluton
+    40: 150, # chunking
     43: 100, # pluton
     47: 100, # pluton       
     52: 100, # pluton
@@ -61,48 +60,36 @@ SAFE_SUBNETS = {
     #69: 100, # pluton
     70: 100, # pluton
     72: 100, # pluton
-    73: 100, # pluton
-    74: 100, # pluton
-    76: 100, # pluton
     77: 100, # pluton
     #78: 40, # pluton
     79: 100, # pluton
     80: 100, # pluton
-    #82: 40, # pluton
+    82: 140, # pluton
     83: 100, # pluton
-    84: 100, # pluton
-    86: 10,  # _______
     #87: 40, # checkerchain
     88: 100, # pluton
     89: 100, # pluton
     #90: 100, # ohmeg
     91: 100, # pluton
     93: 100, # pluton
-    95: 50, # pluton
+    95: 100, # pluton
     96: 100, # pluton
     97: 100, # pluton
     98: 100, # pluton
     99: 100, # pluton
     101: 100, # pluton
     #102: 100, # pluton
-    103: 100, # pluton
-    #104: 100, # pluton scam
-    105: 20, # pluton
-    106: 100, # pluton
+    #104: 100, # pluton
     107: 100, # pluton
-    #108: 100, # pluton
-    109: 100, # pluton
+    #108: 100, # pluto
     110: 100, # pluton
     111: 100, # pluton
     112: 100, # pluton
     113: 100, # pluton
-    114: 20, # pluton
-    115: 100, # pluton
+    114: 20, # pluton\
     116: 100, # pluton
     117: 100, # pluton
     118: 100, # pluton
-    119: 100, # pluton
-    122: 100, # pluton
     126: 100, # pluton
     128: 100, # pluton
 }
