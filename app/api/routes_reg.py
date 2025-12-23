@@ -47,7 +47,7 @@ def create_hotkey(wallet_name: str, hotkey_name: str):
 @router.post("/register")
 def register(request: RegisterRequest):   # Use provided wallet_name or default to "soon"
     success, message = stake_service.burned_register(
-        wallet_name="soon",
+        wallet_name="fantacy",
         hotkey=request.hotkey,
         netuid=request.subnet_id,
     )

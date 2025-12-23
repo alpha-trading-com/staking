@@ -17,7 +17,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 app.include_router(router)
 
-WALLET_NAME = "fantacy"
+WALLET_NAME = "mfantacy"
 
 @app.get("/")
 def read_root(request: fastapi.Request, wallet_name: str = WALLET_NAME):
