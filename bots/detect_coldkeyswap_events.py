@@ -30,7 +30,6 @@ def stake_when_coldkey_swaps(events):
         #28: 100,
     }
     
-    subnet_infos = fetcher.subtensor_finney.all_subnets()
     # Collect all relevant subnets from swaps and changes
     for event in events:
         try:
