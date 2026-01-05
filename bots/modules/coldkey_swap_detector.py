@@ -102,7 +102,7 @@ class ColdkeySwapFetcher:
         self.owner_coldkeys = owner_coldkeys
         return events
  
-    def run(self, callback = None):
+    def run(self, callback = None, exit_on_events = True):
         while True:
             current_block = self.subtensor.get_current_block()
             print(f"Current block: {current_block}")
@@ -117,6 +117,8 @@ class ColdkeySwapFetcher:
                     if len(events) > 0:
                         if callback:
                             callback(events)
+                            if exit_on_events:
+                                exit()
                         break
                     else:
                         print("No coldkey swaps found")
