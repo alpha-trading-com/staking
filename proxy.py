@@ -173,6 +173,11 @@ def main():
         env_file = f".env.sky.izo" 
     elif args.name == "sky":
         env_file = f".env.sky.sky" 
+    elif args.name == "mfantacy":
+        env_file = f".env.mfantacy"
+    else:
+        # Default pattern for unknown wallet names
+        env_file = f".env.{args.name}"
 
     print(f"Env file: {env_file}")
 

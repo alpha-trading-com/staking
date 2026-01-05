@@ -49,6 +49,9 @@ class FastProxy:
         free_balance = self.subtensor.get_balance(
             address=delegator,
         )
+        if amount.rao > free_balance.rao:
+            amount = free_balance
+            
         print(f"free_balance: {free_balance}")
         subnet_info = self.subtensor.subnet(netuid)
         if not subnet_info:
