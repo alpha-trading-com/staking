@@ -1,4 +1,3 @@
-from winreg import ExpandEnvironmentStrings
 import bittensor as bt
 import time
 
