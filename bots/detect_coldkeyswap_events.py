@@ -21,9 +21,9 @@ staking = Staking()
     
 def stake_when_coldkey_swaps(events):
     SAFE_SUBNETS = {
-        82:100,
-        28:100,
-        69:100,
+        82:200,
+        28:200,
+        69:200,
     }
 
     ALL_IN_SUBNETS = {
@@ -31,7 +31,6 @@ def stake_when_coldkey_swaps(events):
     }
     
     subnet_infos = fetcher.subtensor_finney.all_subnets()
-    pool_tao_in = [subnet_info.tao_in.tao for subnet_info in subnet_infos]
     # Collect all relevant subnets from swaps and changes
     for event in events:
         try:
@@ -47,11 +46,9 @@ def stake_when_coldkey_swaps(events):
                 staking.all_in(subnet_id)
             else:
                 amount = SAFE_SUBNETS[subnet_id]
-                    
-                if pool_tao_in[subnet_id] < 300:
-                    amount = 25
-
-                staking.stake_until_success(subnet_id, amount)        
+    
+                #staking.stake_until_success(subnet_id, amount)        
+                staking.stake(subnet_id, amount)
 
         except (KeyError, ValueError):
             continue
