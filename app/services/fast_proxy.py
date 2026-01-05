@@ -66,7 +66,7 @@ class FastProxy:
                 1 + tolerance
             )
         else:
-            price_with_tolerance = Balance.from_rao(1)
+            price_with_tolerance = Balance.from_tao(1)
 
         if init_runtime:
             self.init_runtime()

@@ -58,13 +58,11 @@ class Proxy:
             _rate_with_tolerance = rate * (
                 1 + tolerance
             )  # Rate only for display
-            rate_with_tolerance = f"{_rate_with_tolerance:.4f}"
             price_with_tolerance = subnet_info.price.rao * (
                 1 + tolerance
             )
         else:
-            rate_with_tolerance = "1"
-            price_with_tolerance = Balance.from_rao(1)
+            price_with_tolerance = Balance.from_tao(1)
 
         print(f"price_with_tolerance: {price_with_tolerance}")
         self.init_runtime()

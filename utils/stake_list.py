@@ -5,7 +5,10 @@ from rich.table import Table
 from io import StringIO
 
 
-def get_amount(tao_in, alpha_in, alpha_unstake_amount):
+def get_amount(tao_in, alpha_in, alpha_unstake_amount, netuid):
+    if netuid == 0:
+        return alpha_unstake_amount
+    
     p = tao_in * alpha_in
     alpha_in_after = alpha_in + alpha_unstake_amount
     tao_in_after = p / alpha_in_after
@@ -32,7 +35,11 @@ def get_stake_list(subtensor, wallet_ss58):
     total_value = 0
     for info in stake_infos:
         subnet_info = subnet_infos[info.netuid]
-        value = get_amount(subnet_info.tao_in.tao, subnet_info.alpha_in.tao, info.stake.tao)
+        value = get_amount(
+            subnet_info.tao_in.tao, 
+            subnet_info.alpha_in.tao, 
+            info.stake.tao,
+            info.netuid)
         table.add_row(
             str(info.netuid),
             subnet_info.subnet_name,
