@@ -1,3 +1,4 @@
+from winreg import ExpandEnvironmentStrings
 import bittensor as bt
 import time
 
@@ -8,6 +9,10 @@ from utils.logger import logger
 
 
 NETWORK = "finney"
+COLDKEY_SWAP_EVENT_TYPE = "COLDKEY_SWAP"
+IDENTITY_CHANGE_EVENT_TYPE = "IDENTITY_CHANGE"
+COLDKEY_SWAP_FINISHED_EVENT_TYPE = "COLDKEY_SWAP_FINISHED"
+DEREGISTERED_EVENT_TYPE = "DEREGISTERED"
 
 class ColdkeySwapFetcher:
     def __init__(self):
@@ -17,11 +22,11 @@ class ColdkeySwapFetcher:
         self.last_checked_block = self.subtensor.get_current_block()
         self.subnet_names = []
         self.owner_coldkeys = []
+        
   
     def fetch_extrinsic_data(self, block_number):
         """Extract ColdkeySwapScheduled events from the data"""
-        coldkey_swaps = []
-        identity_changes = []
+        events = []
         print(f"Fetching events from chain")
         block_hash = self.subtensor.substrate.get_block_hash(block_id=block_number)
         extrinsics = self.subtensor.substrate.get_extrinsics(block_hash=block_hash)
@@ -44,33 +49,59 @@ class ColdkeySwapFetcher:
                 
                 try:
                     subnet_id = owner_coldkeys.index(from_coldkey)
-                    swap_info = {
+                    event_info = {
+                        'event_type': COLDKEY_SWAP_EVENT_TYPE,
                         'old_coldkey': from_coldkey,
                         'new_coldkey': new_coldkey,
                         'subnet': subnet_id,
                     }
                     
-                    coldkey_swaps.append(swap_info)
+                    events.append(event_info)
                 except ValueError:
                     print(f"From coldkey {from_coldkey} not found in owner coldkeys")
-                
-        subnet_count = len(self.subnet_names)
-        for i in range(subnet_count):
-            if owner_coldkeys[i] != self.owner_coldkeys[i]:
-                print(f"deregistering or coldkey swap for subnet {i}")
-                continue
 
-            if subnet_names[i] != self.subnet_names[i]:
-                identity_change_info = {
-                    'subnet': i,
-                    'old_identity': self.subnet_names[i],
-                    'new_identity': subnet_names[i],
-                }
-                identity_changes.append(identity_change_info)
+            if (
+                call.get('call_module') == 'SubtensorModule' and
+                call.get('call_function') == 'set_subnet_identity'
+            ):
+                
+                # Get the new coldkey from call_args
+                address = ex.value.get('address', None)
+                subnet_id = owner_coldkeys.index(address)
+                # To get the old identity, use the current subnet identity from subnet_infos[subnet_id].
+                # To get the new identity, get from call_args['subnet_name'].
+                try:
+                    old_identity = subnet_infos[subnet_id].subnet_name
+                    call_args = call.get('call_args', [])
+                    new_identity = next((a['value'] for a in call_args if a['name'] == 'subnet_name'), None)
+                    event_info = {
+                        'event_type': IDENTITY_CHANGE_EVENT_TYPE,
+                        'subnet': subnet_id,
+                        'old_identity': old_identity,
+                        'new_identity': new_identity,
+                    }
+                    events.append(event_info)
+                except ValueError:
+                    print(f"Address {address} not found in owner coldkeys")
+
+        for i in range(len(self.subnet_names)):
+            if self.owner_coldkeys[i] != owner_coldkeys[i]:
+                if self.subnet_names[i] != subnet_names[i]:
+                    event_info = {
+                        'event_type': DEREGISTERED_EVENT_TYPE,
+                        'subnet': i,
+                    }
+                    events.append(event_info)
+                else:
+                    event_info = {
+                        'event_type': COLDKEY_SWAP_FINISHED_EVENT_TYPE,
+                        'subnet': i,
+                    }
+                    events.append(event_info)
 
         self.subnet_names = subnet_names
         self.owner_coldkeys = owner_coldkeys
-        return coldkey_swaps, identity_changes
+        return events
  
     def run(self, callback = None):
         while True:
@@ -83,17 +114,17 @@ class ColdkeySwapFetcher:
             print(f"Fetching coldkey swaps for block {self.last_checked_block}")
             while True:
                 try:
-                    coldkey_swaps, identity_changes = self.fetch_extrinsic_data(self.last_checked_block)
-                    if len(coldkey_swaps) > 0 or len(identity_changes) > 0:
+                    events = self.fetch_extrinsic_data(self.last_checked_block)
+                    if len(events) > 0:
                         if callback:
-                            callback(coldkey_swaps, identity_changes)
+                            callback(events)
+                        break
                     else:
                         print("No coldkey swaps found")
-
+                    
                     self.last_checked_block += 1
                     break
 
                 except Exception as e:
                     print(f"Error fetching coldkey swaps: {e}")
                     time.sleep(1)
-
