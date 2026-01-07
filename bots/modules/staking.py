@@ -123,3 +123,7 @@ class Staking:
         else:
             print(f"Unstake failed: {msg}")
             return False
+
+if __name__ == "__main__":
+    staking = Staking()
+    staking.stake(82, 5.8)
