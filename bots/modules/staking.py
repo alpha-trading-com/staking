@@ -6,13 +6,11 @@ from app.core.config import settings
 from app.services.fast_proxy import FastProxy
 from utils.logger import logger
 
-NETWORK = "finney"
-
 class Staking:
     def __init__(self):
-        self.proxy = FastProxy(network=NETWORK)
+        self.proxy = FastProxy(network=settings.NETWORK)
         self.proxy.init_runtime()
-        self.subtensor = bt.subtensor(network=NETWORK)
+        self.subtensor = bt.subtensor(network=settings.NETWORK)
         self.wallet_name = settings.WALLET_NAMES[0]
         self.wallet = bt.wallet(name=self.wallet_name)
         self.delegator = settings.DELEGATORS[settings.WALLET_NAMES.index(self.wallet_name)]
@@ -126,4 +124,4 @@ class Staking:
 
 if __name__ == "__main__":
     staking = Staking()
-    staking.stake(82, 5.8)
+    staking.stake(1, 5)

@@ -5,7 +5,7 @@ from typing import Optional, cast
 from bittensor.utils.balance import Balance, FixedPoint, fixed_to_float
 
 class FastProxy:
-    def __init__(self, network: str, use_era: bool = True):
+    def __init__(self, network: str = "finney", use_era: bool = True):
         """
         Initialize the FastProxy object.
         
@@ -50,7 +50,7 @@ class FastProxy:
             address=delegator,
         )
         if amount.rao > free_balance.rao:
-            amount = free_balance
+            amount = free_balance - 0.5
             
         print(f"free_balance: {free_balance}")
         subnet_info = self.subtensor.subnet(netuid)
