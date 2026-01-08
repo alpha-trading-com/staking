@@ -50,9 +50,10 @@ class FastProxy:
             address=delegator,
         )
         if amount.rao > free_balance.rao:
-            amount = free_balance - 0.5
+            amount = free_balance - Balance.from_tao(0.5)
             
         print(f"free_balance: {free_balance}")
+        print(f"amount: {amount}")
         subnet_info = self.subtensor.subnet(netuid)
         if not subnet_info:
             return False, f"Subnet with netuid {netuid} does not exist"
