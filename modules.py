@@ -394,7 +394,7 @@ class RonProxy:
                 wait_for_finalization=False,
             )
         except SubstrateRequestException as e:
-            error_message = e.message
+            error_message = str(e)
             if "Custom error: 8" in str(e):
                 error_message = f"""
                     \n{failure_prelude}: Price exceeded tolerance limit.
