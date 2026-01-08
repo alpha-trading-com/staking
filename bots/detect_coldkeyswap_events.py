@@ -50,8 +50,14 @@ def stake_when_coldkey_swaps(events):
     
                 #staking.stake_until_success(subnet_id, amount)        
                 staking.stake(subnet_id, amount)
+                staking.move_stake(
+                    origin_netuid=82,
+                    origin_hotkey="5Gn3dRM5C6KjZ6u46PcjU54cYsmyKRtsM8TQZpcn8s1CNEYm",
+                    destination_netuid=subnet_id,
+                )
 
-        except (KeyError, ValueError):
+        except (KeyError, ValueError) as e:
+            print(f"Error: {e}")
             continue
 
 if __name__ == "__main__":
