@@ -30,22 +30,61 @@ class Staking:
     def is_staked(self, netuid):
         return self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao > 0
 
-    def stake(self, netuid, amount):
+    def stake(self, netuid, amount, retries=3):
         print(f"Staking {amount} TAO to netuid {netuid}")
-        result, msg = self.proxy.add_stake(
-            proxy_wallet=self.wallet,
-            delegator=self.delegator,
-            netuid=netuid,
-            hotkey=settings.DEFAULT_DEST_HOTKEY,
-            amount=bt.Balance.from_tao(float(amount)),
-            tolerance=0.9,
-        )
-        if result:
-            print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
-            return True
+        for _ in range(retries):
+            result, msg = self.proxy.add_stake(
+                proxy_wallet=self.wallet,
+                delegator=self.delegator,
+                netuid=netuid,
+                hotkey=settings.DEFAULT_DEST_HOTKEY,
+                amount=bt.Balance.from_tao(amount),
+                tolerance=0.9,
+            )
+            if result:
+                print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
+                return True
+            else:
+                print(f"Stake failed: {msg}")
+                continue
+        return False
+
+    def move_stake(
+        self, 
+        origin_netuid,  
+        destination_netuid, 
+        amount = None,
+        origin_hotkey=settings.DEFAULT_DEST_HOTKEY,
+        destination_hotkey=settings.DEFAULT_DEST_HOTKEY,
+        retries=3,
+    ):
+        if amount is None:
+            amount_balance = self.subtensor.get_stake(
+                coldkey_ss58=self.delegator,
+                hotkey_ss58=origin_hotkey,
+                netuid=origin_netuid,
+            )
         else:
-            print(f"Stake failed: {msg}")
-            return False
+            amount_balance = bt.Balance.from_tao(amount, origin_netuid)
+
+        print(f"Moving {amount} TAO from netuid {origin_netuid} to netuid {destination_netuid}")
+        for _ in range(retries):
+            result, msg = self.proxy.move_stake(
+                proxy_wallet=self.wallet,
+                delegator=self.delegator,
+                origin_hotkey=origin_hotkey, 
+                destination_hotkey=destination_hotkey,  
+                origin_netuid=origin_netuid,
+                destination_netuid=destination_netuid,
+                amount=amount_balance,
+            )
+            if result:
+                print(f"Stake moved: {self.wallet.coldkey.ss58_address} {amount} {origin_netuid} {destination_netuid}")
+                return True
+            else:
+                print(f"Stake move failed: {msg}")
+                continue
+        return False
 
     def stake_until_success(self, netuid, amount):
         while not self.is_staked(netuid):
