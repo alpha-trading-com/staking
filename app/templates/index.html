@@ -161,6 +161,7 @@
             border-radius: 0.6rem;
             padding: 0.1rem 0.2rem;
             display: flex;
+            align-items: center;
             gap: 0.2rem;
             box-shadow: 0 1px 4px rgba(0,0,0,0.02);
             margin-bottom: 0.2rem;
@@ -205,6 +206,7 @@
             <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
             <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
             <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Tolerance Calculators</button>
+            <button class="btn" onclick="resetAllInputs()" style="margin-left: auto; padding: 0.35rem 0.8rem; font-size: 0.9rem; background: #dc2626;">Reset All</button>
         </div>
         <!-- Tab Contents -->
         <div id="tabContent-balances">
@@ -789,6 +791,20 @@
             } else {
                 rateToleranceInput.classList.remove('opacity-50', 'cursor-not-allowed');
             }
+        }
+
+        // Reset all inputs to defaults
+        function resetAllInputs() {
+            if (!confirm('Are you sure you want to reset all inputs to their default values? This will clear all saved data.')) {
+                return;
+            }
+            
+            // Clear localStorage
+            localStorage.removeItem('stakingDashboardInputs');
+            localStorage.removeItem('activeTab');
+            
+            // Reload the page to reset everything
+            window.location.reload();
         }
 
         // Call this function when the page loads to set initial state
