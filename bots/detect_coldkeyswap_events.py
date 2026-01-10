@@ -49,7 +49,7 @@ def stake_when_coldkey_swaps(events):
                 amount = SAFE_SUBNETS[subnet_id]
     
                 #staking.stake_until_success(subnet_id, amount)        
-                staking.stake(subnet_id, amount)
+                #staking.stake(subnet_id, amount)
                 staking.move_stake(
                     origin_netuid=82,
                     origin_hotkey="5Gn3dRM5C6KjZ6u46PcjU54cYsmyKRtsM8TQZpcn8s1CNEYm",
