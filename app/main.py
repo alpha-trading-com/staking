@@ -88,3 +88,11 @@ def stake_list_v2(wallet_name: str):
     return HTMLResponse(content=html_content)
 
 
+@app.get("/subnets")
+def subnets_page(request: fastapi.Request, username: str = Depends(get_current_username)):
+    return templates.TemplateResponse(
+        "subnets_bubble.html",
+        {"request": request}
+    )
+
+
