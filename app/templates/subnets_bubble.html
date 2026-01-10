@@ -6,6 +6,7 @@
     <title>Subnet Price Bubbles</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
@@ -188,7 +189,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="/" class="back-btn">← Back to Dashboard</a>
+            <a href="https://taostats.io/subnets" target="_blank" class="back-btn">Taostats</a>
             <h1>Subnet Price Visualization</h1>
             <p class="subtitle">Bubble size represents the price of each subnet (in TAO)</p>
         </div>
@@ -254,7 +255,7 @@
         }
         
         function updateStats(subnets) {
-            const validSubnets = subnets.filter(s => s.price > 0);
+            const validSubnets = subnets.filter(s => s.price <= 0.8);
             const totalSubnets = validSubnets.length;
             const avgPrice = totalSubnets > 0 
                 ? (validSubnets.reduce((sum, s) => sum + s.price, 0) / totalSubnets).toFixed(4)
@@ -269,8 +270,8 @@
         }
         
         function renderBubbleChart(subnets) {
-            // Filter out subnets with zero price
-            const validSubnets = subnets.filter(s => s.price > 0);
+            // Filter out subnets with price less than 0.8
+            const validSubnets = subnets.filter(s => s.price <= 0.8);
             
             if (validSubnets.length === 0) {
                 showError('No subnet data available');
@@ -300,26 +301,31 @@
             // Color scale
             const colorScale = d => d.is_dynamic ? '#3b82f6' : '#8b5cf6';
             
-            // Prepare data for force simulation
+            // Prepare data with initial positions using D3 force layout for initial placement
             const nodes = validSubnets.map(subnet => ({
                 ...subnet,
                 radius: sizeScale(subnet.price)
             }));
             
-            // Force simulation
+            // Use D3 force simulation just for initial positioning
             const simulation = d3.forceSimulation(nodes)
                 .force('charge', d3.forceManyBody().strength(5))
                 .force('center', d3.forceCenter(width / 2, height / 2))
                 .force('collision', d3.forceCollide().radius(d => d.radius + 2))
                 .force('x', d3.forceX(width / 2).strength(0.05))
-                .force('y', d3.forceY(height / 2).strength(0.05));
+                .force('y', d3.forceY(height / 2).strength(0.05))
+                .stop();
+            
+            // Run simulation to get initial positions
+            for (let i = 0; i < 300; ++i) simulation.tick();
             
             // Create bubble groups
             const bubbleGroups = svg.selectAll('.bubble-group')
                 .data(nodes)
                 .enter()
                 .append('g')
-                .attr('class', 'bubble-group');
+                .attr('class', 'bubble-group')
+                .attr('transform', d => `translate(${d.x},${d.y})`);
             
             // Add circles
             const bubbles = bubbleGroups.append('circle')
@@ -329,7 +335,10 @@
                 .attr('opacity', 0.8)
                 .on('mouseover', handleMouseOver)
                 .on('mousemove', handleMouseMove)
-                .on('mouseout', handleMouseOut);
+                .on('mouseout', handleMouseOut)
+                .on('click', (event, d) => {
+                    window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
+                });
             
             // Add text labels (show netuid)
             const labels = bubbleGroups.append('text')
@@ -339,10 +348,103 @@
                 .text(d => d.netuid)
                 .style('font-size', d => Math.max(10, d.radius / 3) + 'px');
             
-            // Update positions on simulation tick
-            simulation.on('tick', () => {
-                bubbleGroups.attr('transform', d => `translate(${d.x},${d.y})`);
+            // Physics-based animation with collision detection
+            nodes.forEach(node => {
+                node.vx = (Math.random() - 0.5) * 2; // Random velocity
+                node.vy = (Math.random() - 0.5) * 2;
+                node.element = null;
             });
+            
+            bubbleGroups.each(function(d, i) {
+                d.element = this;
+            });
+            
+            // Collision detection and physics update
+            function updatePhysics() {
+                // Update positions
+                nodes.forEach(node => {
+                    node.x += node.vx;
+                    node.y += node.vy;
+                    
+                    // Bounce off walls
+                    if (node.x - node.radius < 0 || node.x + node.radius > width) {
+                        node.vx *= -0.8;
+                        node.x = Math.max(node.radius, Math.min(width - node.radius, node.x));
+                    }
+                    if (node.y - node.radius < 0 || node.y + node.radius > height) {
+                        node.vy *= -0.8;
+                        node.y = Math.max(node.radius, Math.min(height - node.radius, node.y));
+                    }
+                    
+                    // Apply slight friction
+                    node.vx *= 0.995;
+                    node.vy *= 0.995;
+                    
+                    // Keep minimum velocity
+                    const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
+                    if (speed < 0.5) {
+                        node.vx += (Math.random() - 0.5) * 0.2;
+                        node.vy += (Math.random() - 0.5) * 0.2;
+                    }
+                });
+                
+                // Check collisions between bubbles
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const node1 = nodes[i];
+                        const node2 = nodes[j];
+                        
+                        const dx = node2.x - node1.x;
+                        const dy = node2.y - node1.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = node1.radius + node2.radius;
+                        
+                        if (distance < minDist) {
+                            // Collision detected! Bounce in opposite directions
+                            const angle = Math.atan2(dy, dx);
+                            const sin = Math.sin(angle);
+                            const cos = Math.cos(angle);
+                            
+                            // Rotate velocities
+                            const vx1 = node1.vx * cos + node1.vy * sin;
+                            const vy1 = node1.vy * cos - node1.vx * sin;
+                            const vx2 = node2.vx * cos + node2.vy * sin;
+                            const vy2 = node2.vy * cos - node2.vx * sin;
+                            
+                            // Swap velocities (elastic collision)
+                            const vx1Final = vx2;
+                            const vx2Final = vx1;
+                            
+                            // Rotate back
+                            node1.vx = vx1Final * cos - vy1 * sin;
+                            node1.vy = vy1 * cos + vx1Final * sin;
+                            node2.vx = vx2Final * cos - vy2 * sin;
+                            node2.vy = vy2 * cos + vx2Final * sin;
+                            
+                            // Separate bubbles to prevent sticking
+                            const overlap = minDist - distance;
+                            const separateX = (dx / distance) * overlap * 0.5;
+                            const separateY = (dy / distance) * overlap * 0.5;
+                            node1.x -= separateX;
+                            node1.y -= separateY;
+                            node2.x += separateX;
+                            node2.y += separateY;
+                        }
+                    }
+                }
+                
+                // Update DOM
+                nodes.forEach(node => {
+                    if (node.element) {
+                        node.element.setAttribute('transform', `translate(${node.x},${node.y})`);
+                    }
+                });
+                
+                requestAnimationFrame(updatePhysics);
+            }
+            
+            // Start animation
+            updatePhysics();
             
             // Tooltip functions
             const tooltip = d3.select('#tooltip');
