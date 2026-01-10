@@ -191,7 +191,18 @@
         <div class="header">
             <a href="https://taostats.io/subnets" target="_blank" class="back-btn">Taostats</a>
             <h1>Subnet Price Visualization</h1>
-            <p class="subtitle">Bubble size represents the price of each subnet (in TAO)</p>
+            <p class="subtitle">Bubble size represents the price of each subnet (in TAO) • Historical data from blockchain archive</p>
+            <div style="margin-top: 1rem;">
+                <label for="period-select" style="color: #cbd5e1; margin-right: 0.5rem;">Price Change Period:</label>
+                <select id="period-select" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
+                    <option value="5">Last 5 minutes</option>
+                    <option value="15">Last 15 minutes</option>
+                    <option value="30">Last 30 minutes</option>
+                    <option value="60" selected>Last 1 hour</option>
+                    <option value="240">Last 4 hours</option>
+                    <option value="1440">Last 24 hours</option>
+                </select>
+            </div>
         </div>
         
         <div class="stats" id="stats">
@@ -213,25 +224,33 @@
             <div class="loading" id="loading">Loading subnet data...</div>
         </div>
         
-        <div class="legend">
+        <!--         <div class="legend">
             <div class="legend-item">
-                <div class="legend-color" style="background: #3b82f6;"></div>
-                <span class="legend-label">Dynamic Subnets</span>
+                <div class="legend-color" style="background: #22c55e;"></div>
+                <span class="legend-label">Price Increased</span>
             </div>
             <div class="legend-item">
-                <div class="legend-color" style="background: #8b5cf6;"></div>
-                <span class="legend-label">Static Subnets</span>
+                <div class="legend-color" style="background: #ef4444;"></div>
+                <span class="legend-label">Price Decreased</span>
             </div>
-        </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #6b7280;"></div>
+                <span class="legend-label">No Change</span>
+            </div>
+        </div> -->
     </div>
     
     <div class="tooltip" id="tooltip"></div>
     
     <script>
+        let currentData = null;
+        
         // Fetch subnet data and render visualization
         async function loadSubnetData() {
+            const selectedPeriod = parseInt(document.getElementById('period-select').value);
+            
             try {
-                const response = await fetch('/subnets_data');
+                const response = await fetch(`/subnets_data?period_minutes=${selectedPeriod}`);
                 const data = await response.json();
                 
                 if (!data.success) {
@@ -239,14 +258,43 @@
                     return;
                 }
                 
+                // Map server data to use priceChange field
+                currentData = data.subnets.map(subnet => ({
+                    ...subnet,
+                    priceChange: subnet.price_change || 0
+                }));
+                
+                // Clear previous chart
+                document.getElementById('chart-container').innerHTML = '';
                 document.getElementById('loading').style.display = 'none';
-                renderBubbleChart(data.subnets);
-                updateStats(data.subnets);
+                
+                renderBubbleChart(currentData);
+                updateStats(currentData);
+                
+                // Display period info
+                console.log(`Showing price changes from block ${data.historical_block} to ${data.current_block} (${data.period_minutes} minutes)`);
+                
             } catch (error) {
                 console.error('Error loading subnet data:', error);
                 showError('Failed to load subnet data. Please try again.');
             }
         }
+        
+        function updateVisualization() {
+            // Simply reload data from server with new period
+            loadSubnetData();
+        }
+        
+        // Listen for period changes
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSubnetData();
+            
+            document.getElementById('period-select').addEventListener('change', () => {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').textContent = 'Loading data for selected period...';
+                loadSubnetData();
+            });
+        });
         
         function showError(message) {
             document.getElementById('loading').style.display = 'none';
@@ -298,8 +346,12 @@
                 .domain([minPrice, maxPrice])
                 .range([20, 120]);
             
-            // Color scale
-            const colorScale = d => d.is_dynamic ? '#3b82f6' : '#8b5cf6';
+            // Color scale based on price change
+            const colorScale = d => {
+                if (d.priceChange > 0) return '#22c55e'; // Green for increase
+                if (d.priceChange < 0) return '#ef4444'; // Red for decrease
+                return '#6b7280'; // Gray for no change
+            };
             
             // Prepare data with initial positions using D3 force layout for initial placement
             const nodes = validSubnets.map(subnet => ({
@@ -340,13 +392,32 @@
                     window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
                 });
             
-            // Add text labels (show netuid)
-            const labels = bubbleGroups.append('text')
-                .attr('class', 'bubble-text')
-                .attr('text-anchor', 'middle')
-                .attr('dy', '0.35em')
-                .text(d => d.netuid)
-                .style('font-size', d => Math.max(10, d.radius / 3) + 'px');
+            // Add text labels (show netuid and percentage)
+            bubbleGroups.each(function(d) {
+                const group = d3.select(this);
+                const fontSize = Math.max(10, d.radius / 3);
+                
+                // Add netuid text
+                group.append('text')
+                    .attr('class', 'bubble-text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', d.priceChange !== 0 ? '-0.3em' : '0.35em')
+                    .text(d.netuid)
+                    .style('font-size', fontSize + 'px')
+                    .style('font-weight', '700');
+                
+                // Add percentage text if there's a change
+                if (d.priceChange !== 0) {
+                    const changeText = (d.priceChange > 0 ? '+' : '') + d.priceChange.toFixed(1) + '%';
+                    group.append('text')
+                        .attr('class', 'bubble-text')
+                        .attr('text-anchor', 'middle')
+                        .attr('dy', '1em')
+                        .text(changeText)
+                        .style('font-size', (fontSize * 0.75) + 'px')
+                        .style('font-weight', '600');
+                }
+            });
             
             // Physics-based animation with collision detection
             nodes.forEach(node => {
@@ -455,6 +526,15 @@
             }
             
             function handleMouseMove(event, d) {
+                const priceChangeHtml = d.priceChange !== 0 
+                    ? `<div class="tooltip-row">
+                        <span class="tooltip-label">Price Change:</span>
+                        <span class="tooltip-value" style="color: ${d.priceChange > 0 ? '#22c55e' : '#ef4444'}">
+                            ${d.priceChange > 0 ? '+' : ''}${d.priceChange.toFixed(2)}%
+                        </span>
+                    </div>`
+                    : '';
+                
                 const tooltipHtml = `
                     <div class="tooltip-title">Subnet ${d.netuid}</div>
                     <div class="tooltip-row">
@@ -465,6 +545,7 @@
                         <span class="tooltip-label">Price:</span>
                         <span class="tooltip-value">${d.price.toFixed(6)} τ</span>
                     </div>
+                    ${priceChangeHtml}
                     <div class="tooltip-row">
                         <span class="tooltip-label">TAO In:</span>
                         <span class="tooltip-value">${d.tao_in.toFixed(2)} τ</span>
@@ -490,8 +571,6 @@
             }
         }
         
-        // Load data on page load
-        document.addEventListener('DOMContentLoaded', loadSubnetData);
     </script>
 </body>
 </html>
