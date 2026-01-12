@@ -16,7 +16,7 @@ def get_amount(tao_in, alpha_in, alpha_unstake_amount, netuid):
 
 
 def get_stake_list(subtensor, wallet_ss58):
-    stake_infos = subtensor.get_stake_for_coldkey(
+    stake_infos = subtensor.get_stake_info_for_coldkey(
         coldkey_ss58=wallet_ss58
     )
     subnet_infos = subtensor.all_subnets()
