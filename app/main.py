@@ -42,7 +42,7 @@ def read_root(request: fastapi.Request, username: str = Depends(get_current_user
         return balance_html
 
     return templates.TemplateResponse(
-        "index.html",
+        "index_mev.html",
         {
             "request": request, 
             "balance_html": get_balance_html(), 

@@ -161,7 +161,6 @@
             border-radius: 0.6rem;
             padding: 0.1rem 0.2rem;
             display: flex;
-            align-items: center;
             gap: 0.2rem;
             box-shadow: 0 1px 4px rgba(0,0,0,0.02);
             margin-bottom: 0.2rem;
@@ -206,8 +205,6 @@
             <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
             <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
             <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Tolerance Calculators</button>
-            <a href="/subnets" class="tab tab-inactive" style="padding: 0.35rem 1rem; display: flex; align-items: center; text-decoration: none;">Subnets 🔵</a>
-            <button class="btn" onclick="resetAllInputs()" style="margin-left: auto; padding: 0.35rem 0.8rem; font-size: 0.9rem; background: #dc2626;">Reset All</button>
         </div>
         <!-- Tab Contents -->
         <div id="tabContent-balances">
@@ -254,6 +251,16 @@
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="stakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
                 </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="stakeUseEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="stakeUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="stakeMevProtection" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="stakeMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
+                </div>
                 <button onclick="stake()" class="btn">Stake</button>
             </div>
         </div>
@@ -292,6 +299,16 @@
                 <div class="input-group">
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="unstakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="unstakeUseEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="unstakeUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="unstakeMevProtection" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="unstakeMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
                 </div>
                 <button onclick="unstake()" class="btn btn-danger">Unstake</button>
             </div>
@@ -338,6 +355,16 @@
                 <div class="input-group">
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="moveRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="moveUseEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="moveUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="moveMevProtection" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="moveMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
                 </div>
 
                 <button onclick="moveStake()" class="btn">Move Stake</button>
@@ -426,152 +453,6 @@
     </div>
 
     <script>
-        // LocalStorage functions for saving and restoring inputs
-        function saveInputs() {
-            // Save all input values
-            const inputs = {
-                // Stake tab
-                stakeWalletName: document.getElementById('stakeWalletName')?.value || '',
-                stakeAmount: document.getElementById('stakeAmount')?.value || '',
-                netuid: document.getElementById('netuid')?.value || '',
-                rateTolerance: document.getElementById('rateTolerance')?.value || '',
-                minToleranceStaking: document.getElementById('minToleranceStaking')?.checked || false,
-                stakeValidatorHotkey: document.getElementById('stakeValidatorHotkey')?.value || '',
-                stakeRetries: document.getElementById('stakeRetries')?.value || '',
-                
-                // Unstake tab
-                unstakeWalletName: document.getElementById('unstakeWalletName')?.value || '',
-                unstakeAmount: document.getElementById('unstakeAmount')?.value || '',
-                unstakeNetuid: document.getElementById('unstakeNetuid')?.value || '',
-                unstakeRateTolerance: document.getElementById('unstakeRateTolerance')?.value || '',
-                minToleranceUnstaking: document.getElementById('minToleranceUnstaking')?.checked || false,
-                unstakeValidatorHotkey: document.getElementById('unstakeValidatorHotkey')?.value || '',
-                unstakeRetries: document.getElementById('unstakeRetries')?.value || '',
-                
-                // Move stake tab
-                moveWalletName: document.getElementById('moveWalletName')?.value || '',
-                moveAmount: document.getElementById('moveAmount')?.value || '',
-                originNetuid: document.getElementById('originNetuid')?.value || '',
-                destinationNetuid: document.getElementById('destinationNetuid')?.value || '',
-                originHotkey: document.getElementById('originHotkey')?.value || '',
-                destinationHotkey: document.getElementById('destinationHotkey')?.value || '',
-                moveRetries: document.getElementById('moveRetries')?.value || '',
-                
-                // Calculator tab
-                calcAmount: document.getElementById('calcAmount')?.value || '',
-                calcNetuid: document.getElementById('calcNetuid')?.value || '',
-                
-                // Active tab - find which tab is currently active
-                activeTab: (() => {
-                    const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
-                    for (const tab of tabs) {
-                        const tabElement = document.getElementById('tab-' + tab);
-                        if (tabElement && tabElement.classList.contains('tab-active')) {
-                            return tab;
-                        }
-                    }
-                    return localStorage.getItem('activeTab') || 'balances';
-                })()
-            };
-            
-            localStorage.setItem('stakingDashboardInputs', JSON.stringify(inputs));
-        }
-
-        function restoreInputs() {
-            const saved = localStorage.getItem('stakingDashboardInputs');
-            if (!saved) return;
-            
-            try {
-                const inputs = JSON.parse(saved);
-                
-                // Restore stake tab inputs
-                if (inputs.stakeWalletName && document.getElementById('stakeWalletName')) {
-                    document.getElementById('stakeWalletName').value = inputs.stakeWalletName;
-                }
-                if (inputs.stakeAmount !== undefined && document.getElementById('stakeAmount')) {
-                    document.getElementById('stakeAmount').value = inputs.stakeAmount;
-                }
-                if (inputs.netuid !== undefined && document.getElementById('netuid')) {
-                    document.getElementById('netuid').value = inputs.netuid;
-                }
-                if (inputs.rateTolerance !== undefined && document.getElementById('rateTolerance')) {
-                    document.getElementById('rateTolerance').value = inputs.rateTolerance;
-                }
-                if (inputs.minToleranceStaking !== undefined && document.getElementById('minToleranceStaking')) {
-                    document.getElementById('minToleranceStaking').checked = inputs.minToleranceStaking;
-                    toggleRateTolerance();
-                }
-                if (inputs.stakeValidatorHotkey !== undefined && document.getElementById('stakeValidatorHotkey')) {
-                    document.getElementById('stakeValidatorHotkey').value = inputs.stakeValidatorHotkey;
-                }
-                if (inputs.stakeRetries !== undefined && document.getElementById('stakeRetries')) {
-                    document.getElementById('stakeRetries').value = inputs.stakeRetries;
-                }
-                
-                // Restore unstake tab inputs
-                if (inputs.unstakeWalletName && document.getElementById('unstakeWalletName')) {
-                    document.getElementById('unstakeWalletName').value = inputs.unstakeWalletName;
-                }
-                if (inputs.unstakeAmount !== undefined && document.getElementById('unstakeAmount')) {
-                    document.getElementById('unstakeAmount').value = inputs.unstakeAmount;
-                }
-                if (inputs.unstakeNetuid !== undefined && document.getElementById('unstakeNetuid')) {
-                    document.getElementById('unstakeNetuid').value = inputs.unstakeNetuid;
-                }
-                if (inputs.unstakeRateTolerance !== undefined && document.getElementById('unstakeRateTolerance')) {
-                    document.getElementById('unstakeRateTolerance').value = inputs.unstakeRateTolerance;
-                }
-                if (inputs.minToleranceUnstaking !== undefined && document.getElementById('minToleranceUnstaking')) {
-                    document.getElementById('minToleranceUnstaking').checked = inputs.minToleranceUnstaking;
-                    toggleUnstakeRateTolerance();
-                }
-                if (inputs.unstakeValidatorHotkey !== undefined && document.getElementById('unstakeValidatorHotkey')) {
-                    document.getElementById('unstakeValidatorHotkey').value = inputs.unstakeValidatorHotkey;
-                }
-                if (inputs.unstakeRetries !== undefined && document.getElementById('unstakeRetries')) {
-                    document.getElementById('unstakeRetries').value = inputs.unstakeRetries;
-                }
-                
-                // Restore move stake tab inputs
-                if (inputs.moveWalletName && document.getElementById('moveWalletName')) {
-                    document.getElementById('moveWalletName').value = inputs.moveWalletName;
-                }
-                if (inputs.moveAmount !== undefined && document.getElementById('moveAmount')) {
-                    document.getElementById('moveAmount').value = inputs.moveAmount;
-                }
-                if (inputs.originNetuid !== undefined && document.getElementById('originNetuid')) {
-                    document.getElementById('originNetuid').value = inputs.originNetuid;
-                }
-                if (inputs.destinationNetuid !== undefined && document.getElementById('destinationNetuid')) {
-                    document.getElementById('destinationNetuid').value = inputs.destinationNetuid;
-                }
-                if (inputs.originHotkey !== undefined && document.getElementById('originHotkey')) {
-                    document.getElementById('originHotkey').value = inputs.originHotkey;
-                }
-                if (inputs.destinationHotkey !== undefined && document.getElementById('destinationHotkey')) {
-                    document.getElementById('destinationHotkey').value = inputs.destinationHotkey;
-                }
-                if (inputs.moveRetries !== undefined && document.getElementById('moveRetries')) {
-                    document.getElementById('moveRetries').value = inputs.moveRetries;
-                }
-                
-                // Restore calculator tab inputs
-                if (inputs.calcAmount !== undefined && document.getElementById('calcAmount')) {
-                    document.getElementById('calcAmount').value = inputs.calcAmount;
-                }
-                if (inputs.calcNetuid !== undefined && document.getElementById('calcNetuid')) {
-                    document.getElementById('calcNetuid').value = inputs.calcNetuid;
-                }
-                
-                // Restore active tab
-                if (inputs.activeTab) {
-                    showTab(inputs.activeTab);
-                }
-            } catch (e) {
-                console.error('Error restoring inputs:', e);
-            }
-        }
-
         // Tab logic
         function showTab(tab) {
             const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
@@ -581,10 +462,9 @@
                 document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
                 document.getElementById('tab-' + t).classList.toggle('tab-inactive', t !== tab);
             });
-            
-            // Save active tab
-            localStorage.setItem('activeTab', tab);
         }
+        // Set default tab
+        showTab('balances');
 
         // Helper function to set button loading state
         function setButtonLoading(button, isLoading) {
@@ -609,6 +489,8 @@
             const validatorHotkey = document.getElementById('stakeValidatorHotkey').value;
             const minToleranceStaking = document.getElementById('minToleranceStaking').checked;
             const retries = document.getElementById('stakeRetries').value;
+            const useEra = document.getElementById('stakeUseEra').checked;
+            const mevProtection = document.getElementById('stakeMevProtection').checked;
 
             if (!walletName) {
                 alert('Please select a wallet');
@@ -623,7 +505,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}`;
+                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (retries) {
                     url += `&retries=${retries}`;
                 }
@@ -648,6 +530,8 @@
             const rateTolerance = document.getElementById('unstakeRateTolerance').value;
             const minToleranceUnstaking = document.getElementById('minToleranceUnstaking').checked;
             const retries = document.getElementById('unstakeRetries').value;
+            const useEra = document.getElementById('unstakeUseEra').checked;
+            const mevProtection = document.getElementById('unstakeMevProtection').checked;
 
             if (!walletName) {
                 alert('Please select a wallet');
@@ -663,7 +547,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}`;
+                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (amount) {
                     url += `&amount=${amount}`;
                 }
@@ -690,6 +574,8 @@
             const originHotkey = document.getElementById('originHotkey').value;
             const destinationHotkey = document.getElementById('destinationHotkey').value;
             const retries = document.getElementById('moveRetries').value;
+            const useEra = document.getElementById('moveUseEra').checked;
+            const mevProtection = document.getElementById('moveMevProtection').checked;
 
             if (!walletName || !originNetuid || !destinationNetuid) {
                 alert('Please fill out wallet name, origin netuid, and destination netuid.');
@@ -702,7 +588,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}`;
+                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (amount) url += `&amount=${amount}`;
                 if (retries) url += `&retries=${retries}`;
 
@@ -794,66 +680,34 @@
             }
         }
 
-        // Reset all inputs to defaults
-        function resetAllInputs() {
-            if (!confirm('Are you sure you want to reset all inputs to their default values? This will clear all saved data.')) {
-                return;
-            }
-            
-            // Clear localStorage
-            localStorage.removeItem('stakingDashboardInputs');
-            localStorage.removeItem('activeTab');
-            
-            // Reload the page to reset everything
-            window.location.reload();
+        // Sync use_era checkboxes across all tabs
+        function syncUseEra(checked) {
+            document.getElementById('stakeUseEra').checked = checked;
+            document.getElementById('unstakeUseEra').checked = checked;
+            document.getElementById('moveUseEra').checked = checked;
+        }
+
+        // Sync mev_protection checkboxes across all tabs
+        function syncMevProtection(checked) {
+            document.getElementById('stakeMevProtection').checked = checked;
+            document.getElementById('unstakeMevProtection').checked = checked;
+            document.getElementById('moveMevProtection').checked = checked;
         }
 
         // Call this function when the page loads to set initial state
         document.addEventListener('DOMContentLoaded', function() {
-            // Restore saved inputs first
-            restoreInputs();
-            
-            // Set default tab if no tab was restored
-            const savedTab = localStorage.getItem('activeTab');
-            if (!savedTab) {
-                showTab('balances');
-            }
-            
-            // Set up toggle states
             toggleRateTolerance();
             toggleUnstakeRateTolerance();
-            
-            // Add event listeners to all inputs to save on change
-            const inputIds = [
-                'stakeWalletName', 'stakeAmount', 'netuid', 'rateTolerance', 
-                'minToleranceStaking', 'stakeValidatorHotkey', 'stakeRetries',
-                'unstakeWalletName', 'unstakeAmount', 'unstakeNetuid', 
-                'unstakeRateTolerance', 'minToleranceUnstaking', 
-                'unstakeValidatorHotkey', 'unstakeRetries',
-                'moveWalletName', 'moveAmount', 'originNetuid', 
-                'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
-                'calcAmount', 'calcNetuid'
-            ];
-            
-            inputIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    if (element.type === 'checkbox') {
-                        element.addEventListener('change', saveInputs);
-                    } else {
-                        element.addEventListener('input', saveInputs);
-                        element.addEventListener('change', saveInputs);
-                    }
-                }
-            });
-            
-            // Save active tab when switching tabs
-            const tabButtons = document.querySelectorAll('.tab');
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    setTimeout(saveInputs, 100); // Small delay to ensure tab is switched
-                });
-            });
+
+            // Add event listeners for syncing use_era checkboxes
+            document.getElementById('stakeUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+            document.getElementById('unstakeUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+            document.getElementById('moveUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+
+            // Add event listeners for syncing mev_protection checkboxes
+            document.getElementById('stakeMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+            document.getElementById('unstakeMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+            document.getElementById('moveMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
         });
     </script>
 </body>

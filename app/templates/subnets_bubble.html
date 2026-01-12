@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subnet Price Bubbles</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
+            color: #e5e7eb;
+            padding: 1rem;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: #fff;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #cbd5e1;
+            font-size: 1rem;
+        }
+        
+        #chart-container {
+            background: #232a36;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-height: 700px;
+            position: relative;
+        }
+        
+        .bubble {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+        
+        .bubble:hover {
+            opacity: 0.8;
+            stroke: #60a5fa;
+            stroke-width: 3px;
+        }
+        
+        .bubble-text {
+            pointer-events: none;
+            font-weight: 600;
+            fill: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(35, 42, 54, 0.98);
+            border: 1px solid #60a5fa;
+            border-radius: 8px;
+            padding: 12px 16px;
+            pointer-events: none;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .tooltip-title {
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            gap: 20px;
+        }
+        
+        .tooltip-label {
+            color: #9ca3af;
+        }
+        
+        .tooltip-value {
+            color: #e5e7eb;
+            font-weight: 600;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #9ca3af;
+            font-size: 1.2rem;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 2rem;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
+            margin: 2rem;
+        }
+        
+        .back-btn {
+            background: #2563eb;
+            color: #fff;
+            padding: 0.5rem 1.2rem;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .back-btn:hover {
+            background: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        
+        .legend-label {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #9ca3af;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="https://taostats.io/subnets" target="_blank" class="back-btn">Taostats</a>
+            <div style="margin-top: 1rem;">
+                <label for="period-select" style="color: #cbd5e1; margin-right: 0.5rem;">Price Change Period:</label>
+                <select id="period-select" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
+                    <option value="5">Last 5 minutes</option>
+                    <option value="15">Last 15 minutes</option>
+                    <option value="30">Last 30 minutes</option>
+                    <option value="60" selected>Last 1 hour</option>
+                    <option value="240">Last 4 hours</option>
+                    <option value="1440">Last 24 hours</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- <div class="stats" id="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="total-subnets">-</div>
+                <div class="stat-label">Total Subnets</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-price">-</div>
+                <div class="stat-label">Average Price</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="highest-price">-</div>
+                <div class="stat-label">Highest Price</div>
+            </div>
+        </div> -->
+        
+        <div id="chart-container">
+            <div class="loading" id="loading">Loading subnet data...</div>
+        </div>
+        
+        <!--         <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #22c55e;"></div>
+                <span class="legend-label">Price Increased</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ef4444;"></div>
+                <span class="legend-label">Price Decreased</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #6b7280;"></div>
+                <span class="legend-label">No Change</span>
+            </div>
+        </div> -->
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        let currentData = null;
+        
+        // Fetch subnet data and render visualization
+        async function loadSubnetData() {
+            const selectedPeriod = parseInt(document.getElementById('period-select').value);
+            
+            try {
+                const response = await fetch(`/subnets_data?period_minutes=${selectedPeriod}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    showError(data.error || 'Failed to load subnet data');
+                    return;
+                }
+                
+                // Map server data to use priceChange field
+                currentData = data.subnets.map(subnet => ({
+                    ...subnet,
+                    priceChange: subnet.price_change || 0
+                }));
+                
+                // Clear previous chart
+                const loadingEl = document.getElementById('loading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                document.getElementById('chart-container').innerHTML = '';
+                
+                renderBubbleChart(currentData);
+                updateStats(currentData);
+                
+                // Display period info
+                console.log(`Showing price changes from block ${data.historical_block} to ${data.current_block} (${data.period_minutes} minutes)`);
+                
+            } catch (error) {
+                console.error('Error loading subnet data:', error);
+                showError('Failed to load subnet data. Please try again.');
+            }
+        }
+        
+        function updateVisualization() {
+            // Simply reload data from server with new period
+            loadSubnetData();
+        }
+        
+        // Listen for period changes
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSubnetData();
+            
+            document.getElementById('period-select').addEventListener('change', () => {
+                const container = document.getElementById('chart-container');
+                container.innerHTML = '<div class="loading" id="loading">Loading data for selected period...</div>';
+                loadSubnetData();
+            });
+        });
+        
+        function showError(message) {
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.style.display = 'none';
+            const container = document.getElementById('chart-container');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        function updateStats(subnets) {
+            const validSubnets = subnets.filter(s => s.price <= 0.8);
+            const totalSubnets = validSubnets.length;
+            const avgPrice = totalSubnets > 0 
+                ? (validSubnets.reduce((sum, s) => sum + s.price, 0) / totalSubnets).toFixed(4)
+                : '0.0000';
+            const highestPrice = totalSubnets > 0
+                ? Math.max(...validSubnets.map(s => s.price)).toFixed(4)
+                : '0.0000';
+            
+            document.getElementById('total-subnets').textContent = totalSubnets;
+            document.getElementById('avg-price').textContent = avgPrice + ' τ';
+            document.getElementById('highest-price').textContent = highestPrice + ' τ';
+        }
+        
+        function renderBubbleChart(subnets) {
+            // Filter out subnets with price less than 0.8
+            const validSubnets = subnets.filter(s => s.price <= 0.8);
+            
+            if (validSubnets.length === 0) {
+                showError('No subnet data available');
+                return;
+            }
+            
+            const container = document.getElementById('chart-container');
+            const containerRect = container.getBoundingClientRect();
+            const width = containerRect.width - 40;
+            const height = 700;
+            
+            // Create SVG
+            const svg = d3.select('#chart-container')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Calculate bubble sizes
+            const maxPrice = d3.max(validSubnets, d => d.price);
+            const minPrice = d3.min(validSubnets, d => d.price);
+            
+            // Size scale - make the range more reasonable for visualization
+            const sizeScale = d3.scaleSqrt()
+                .domain([minPrice, maxPrice])
+                .range([20, 120]);
+            
+            // Color scale based on price change
+            const colorScale = d => {
+                if (d.priceChange > 0) return '#22c55e'; // Green for increase
+                if (d.priceChange < 0) return '#ef4444'; // Red for decrease
+                return '#6b7280'; // Gray for no change
+            };
+            
+            // Prepare data with initial positions using D3 force layout for initial placement
+            const nodes = validSubnets.map(subnet => ({
+                ...subnet,
+                radius: sizeScale(subnet.price)
+            }));
+            
+            // Use D3 force simulation just for initial positioning
+            const simulation = d3.forceSimulation(nodes)
+                .force('charge', d3.forceManyBody().strength(5))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(d => d.radius + 2))
+                .force('x', d3.forceX(width / 2).strength(0.05))
+                .force('y', d3.forceY(height / 2).strength(0.05))
+                .stop();
+            
+            // Run simulation to get initial positions
+            for (let i = 0; i < 300; ++i) simulation.tick();
+            
+            // Create bubble groups
+            const bubbleGroups = svg.selectAll('.bubble-group')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', 'bubble-group')
+                .attr('transform', d => `translate(${d.x},${d.y})`);
+            
+            // Add circles
+            const bubbles = bubbleGroups.append('circle')
+                .attr('class', 'bubble')
+                .attr('r', d => d.radius)
+                .attr('fill', d => colorScale(d))
+                .attr('opacity', 0.8)
+                .on('mouseover', handleMouseOver)
+                .on('mousemove', handleMouseMove)
+                .on('mouseout', handleMouseOut)
+                .on('click', (event, d) => {
+                    window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
+                });
+            
+            // Add text labels (show netuid and percentage)
+            bubbleGroups.each(function(d) {
+                const group = d3.select(this);
+                const fontSize = Math.max(10, d.radius / 3);
+                
+                // Add netuid text
+                group.append('text')
+                    .attr('class', 'bubble-text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', d.priceChange !== 0 ? '-0.3em' : '0.35em')
+                    .text(d.netuid)
+                    .style('font-size', fontSize + 'px')
+                    .style('font-weight', '700');
+                
+                // Add percentage text if there's a change
+                if (d.priceChange !== 0) {
+                    const changeText = (d.priceChange > 0 ? '+' : '') + d.priceChange.toFixed(1) + '%';
+                    group.append('text')
+                        .attr('class', 'bubble-text')
+                        .attr('text-anchor', 'middle')
+                        .attr('dy', '1em')
+                        .text(changeText)
+                        .style('font-size', (fontSize * 0.75) + 'px')
+                        .style('font-weight', '600');
+                }
+            });
+            
+            // Physics-based animation with collision detection
+            nodes.forEach(node => {
+                node.vx = (Math.random() - 0.5) * 2; // Random velocity
+                node.vy = (Math.random() - 0.5) * 2;
+                node.element = null;
+            });
+            
+            bubbleGroups.each(function(d, i) {
+                d.element = this;
+            });
+            
+            // Collision detection and physics update
+            function updatePhysics() {
+                // Update positions
+                nodes.forEach(node => {
+                    node.x += node.vx;
+                    node.y += node.vy;
+                    
+                    // Bounce off walls
+                    if (node.x - node.radius < 0 || node.x + node.radius > width) {
+                        node.vx *= -0.8;
+                        node.x = Math.max(node.radius, Math.min(width - node.radius, node.x));
+                    }
+                    if (node.y - node.radius < 0 || node.y + node.radius > height) {
+                        node.vy *= -0.8;
+                        node.y = Math.max(node.radius, Math.min(height - node.radius, node.y));
+                    }
+                    
+                    // Apply slight friction
+                    node.vx *= 0.995;
+                    node.vy *= 0.995;
+                    
+                    // Keep minimum velocity
+                    const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
+                    if (speed < 0.5) {
+                        node.vx += (Math.random() - 0.5) * 0.2;
+                        node.vy += (Math.random() - 0.5) * 0.2;
+                    }
+                });
+                
+                // Check collisions between bubbles
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const node1 = nodes[i];
+                        const node2 = nodes[j];
+                        
+                        const dx = node2.x - node1.x;
+                        const dy = node2.y - node1.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = node1.radius + node2.radius;
+                        
+                        if (distance < minDist) {
+                            // Collision detected! Bounce in opposite directions
+                            const angle = Math.atan2(dy, dx);
+                            const sin = Math.sin(angle);
+                            const cos = Math.cos(angle);
+                            
+                            // Rotate velocities
+                            const vx1 = node1.vx * cos + node1.vy * sin;
+                            const vy1 = node1.vy * cos - node1.vx * sin;
+                            const vx2 = node2.vx * cos + node2.vy * sin;
+                            const vy2 = node2.vy * cos - node2.vx * sin;
+                            
+                            // Swap velocities (elastic collision)
+                            const vx1Final = vx2;
+                            const vx2Final = vx1;
+                            
+                            // Rotate back
+                            node1.vx = vx1Final * cos - vy1 * sin;
+                            node1.vy = vy1 * cos + vx1Final * sin;
+                            node2.vx = vx2Final * cos - vy2 * sin;
+                            node2.vy = vy2 * cos + vx2Final * sin;
+                            
+                            // Separate bubbles to prevent sticking
+                            const overlap = minDist - distance;
+                            const separateX = (dx / distance) * overlap * 0.5;
+                            const separateY = (dy / distance) * overlap * 0.5;
+                            node1.x -= separateX;
+                            node1.y -= separateY;
+                            node2.x += separateX;
+                            node2.y += separateY;
+                        }
+                    }
+                }
+                
+                // Update DOM
+                nodes.forEach(node => {
+                    if (node.element) {
+                        node.element.setAttribute('transform', `translate(${node.x},${node.y})`);
+                    }
+                });
+                
+                requestAnimationFrame(updatePhysics);
+            }
+            
+            // Start animation
+            updatePhysics();
+            
+            // Tooltip functions
+            const tooltip = d3.select('#tooltip');
+            
+            function handleMouseOver(event, d) {
+                tooltip.style('opacity', 1);
+                d3.select(this).attr('stroke', '#60a5fa').attr('stroke-width', 3);
+            }
+            
+            function handleMouseMove(event, d) {
+                const priceChangeHtml = d.priceChange !== 0 
+                    ? `<div class="tooltip-row">
+                        <span class="tooltip-label">Price Change:</span>
+                        <span class="tooltip-value" style="color: ${d.priceChange > 0 ? '#22c55e' : '#ef4444'}">
+                            ${d.priceChange > 0 ? '+' : ''}${d.priceChange.toFixed(2)}%
+                        </span>
+                    </div>`
+                    : '';
+                
+                const tooltipHtml = `
+                    <div class="tooltip-title">Subnet ${d.netuid}</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Name:</span>
+                        <span class="tooltip-value">${d.name}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Price:</span>
+                        <span class="tooltip-value">${d.price.toFixed(6)} τ</span>
+                    </div>
+                    ${priceChangeHtml}
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">TAO In:</span>
+                        <span class="tooltip-value">${d.tao_in.toFixed(2)} τ</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Alpha In:</span>
+                        <span class="tooltip-value">${d.alpha_in.toFixed(2)}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Type:</span>
+                        <span class="tooltip-value">${d.is_dynamic ? 'Dynamic' : 'Static'}</span>
+                    </div>
+                `;
+                
+                tooltip.html(tooltipHtml)
+                    .style('left', (event.pageX + 15) + 'px')
+                    .style('top', (event.pageY - 15) + 'px');
+            }
+            
+            function handleMouseOut(event, d) {
+                tooltip.style('opacity', 0);
+                d3.select(this).attr('stroke', null);
+            }
+        }
+        
+    </script>
+</body>
+</html>
+
