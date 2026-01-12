@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staking Dashboard MEV</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
+            color: #e5e7eb;
+            padding: 0.5rem 0 0.5rem 0;
+        }
+        .max-w-4xl {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .balance-container {
+            background: #232a36;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+            border: 1px solid #232a36;
+        }
+        .balance-container:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.18);
+        }
+        .balance-title {
+            color: #cbd5e1;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        .balance-amount {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .form-container {
+            background: #232a36;
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.13);
+            border: 1px solid #232a36;
+        }
+        .input-group {
+            margin-bottom: 0.75rem;
+        }
+        .input-label {
+            color: #cbd5e1;
+            margin-bottom: 0.25rem;
+            display: block;
+            font-weight: 500;
+            font-size: 0.97rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            background: #181c24;
+            border: 1px solid #353b48;
+            color: #e5e7eb;
+            transition: all 0.2s ease;
+            font-size: 0.97rem;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.13);
+        }
+        .btn {
+            background: #2563eb;
+            color: #fff;
+            padding: 0.5rem 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            border: none;
+            font-size: 0.97rem;
+        }
+        .btn:hover {
+            background: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.13);
+        }
+        .btn-danger {
+            background: #ef4444;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.13);
+        }
+        h1 {
+            color: #fff;
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            margin-top: 0.5rem;
+        }
+        h2 {
+            color: #e5e7eb;
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.7rem;
+        }
+        #minToleranceResult, #stakeListResult {
+            color: #cbd5e1;
+        }
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn:disabled:hover {
+            box-shadow: none;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: #9CA3AF;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .toggle-btn:hover {
+            color: #D1D5DB;
+        }
+        .toggle-btn .icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            transition: transform 0.2s ease;
+        }
+        .toggle-btn.collapsed .icon {
+            transform: rotate(-90deg);
+        }
+        .tab-bar {
+            background: #232a36;
+            border-radius: 0.6rem;
+            padding: 0.1rem 0.2rem;
+            display: flex;
+            gap: 0.2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+            margin-bottom: 0.2rem;
+        }
+        .tab {
+            font-weight: 600;
+            padding: 0.35rem 1rem;
+            border-radius: 0.4rem 0.4rem 0 0;
+            background: none;
+            border: none;
+            outline: none;
+            transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+            color: #a1a1aa;
+            cursor: pointer;
+            position: relative;
+            font-size: 1rem;
+        }
+        .tab-active {
+            color: #60a5fa;
+            background: #181c24;
+            box-shadow: 0 1px 4px rgba(96,165,250,0.09);
+            z-index: 1;
+        }
+        .tab-inactive:hover {
+            color: #60a5fa;
+            background: #232a36;
+        }
+        .text-red-500 {
+            color: #f87171;
+        }
+        .text-gray-400 {
+            color: #a1a1aa;
+        }
+    </style>
+</head>
+<body class="bg-[#181c24] text-white min-h-screen p-4">
+    <div class="max-w-4xl mx-auto" style="margin-top:0.1rem;margin-bottom:0.1rem;">
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <button class="tab tab-active" id="tab-balances" onclick="showTab('balances')">Balances</button>
+            <button class="tab tab-inactive" id="tab-stake" onclick="showTab('stake')">Stake</button>
+            <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
+            <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
+            <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Tolerance Calculators</button>
+            <button class="btn" onclick="resetAllInputs()" style="margin-left: auto; padding: 0.35rem 0.8rem; font-size: 0.9rem; background: #dc2626;">Reset All</button>
+        </div>
+        <!-- Tab Contents -->
+        <div id="tabContent-balances">
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold mb-4">Wallet Free Balances</h2>
+                <div id="balanceContainer">
+                    {{ balance_html | safe }}
+                </div>
+            </div>
+        </div>
+        <div id="tabContent-stake" style="display:none;">
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Stake TAO</h2>
+                <div class="input-group">
+                    <label class="input-label">Wallet Name</label>
+                    <select id="stakeWalletName" class="input-field">
+                        {% for wallet in wallet_names %}
+                            <option value="{{ wallet }}" {% if loop.first %}selected{% endif %}>{{ wallet }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">TAO Amount</label>
+                    <input type="text" id="stakeAmount" class="input-field" step="0.000001" min="0">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Network ID</label>
+                    <input type="text" id="netuid" class="input-field" >
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Rate Tolerance</label>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="rateTolerance" class="input-field flex-1" value="0.5" step="0.0001">
+                        <input type="checkbox" id="minToleranceStaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleRateTolerance()">
+                        <label for="minToleranceStaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1" id="rateToleranceNote">This value will be ignored when "Use Minimum Tolerance" is checked</p>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Validator Hotkey</label>
+                    <input type="text" id="stakeValidatorHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Retries (optional)</label>
+                    <input type="text" id="stakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="stakeUseEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="stakeUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="stakeMevProtection" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="stakeMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
+                </div>
+                <button onclick="stake()" class="btn">Stake</button>
+            </div>
+        </div>
+        <div id="tabContent-unstake" style="display:none;">
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Unstake</h2>
+                <div class="input-group">
+                    <label class="input-label">Wallet Name</label>
+                    <select id="unstakeWalletName" class="input-field">
+                        {% for wallet in wallet_names %}
+                            <option value="{{ wallet }}" {% if loop.first %}selected{% endif %}>{{ wallet }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Amount (optional)</label>
+                    <input type="text" id="unstakeAmount" class="input-field" placeholder="Leave blank to unstake all">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Network ID</label>
+                    <input type="text" id="unstakeNetuid" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Rate Tolerance</label>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="unstakeRateTolerance" class="input-field flex-1" value="0.5" step="0.0001">
+                        <input type="checkbox" id="minToleranceUnstaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleUnstakeRateTolerance()">
+                        <label for="minToleranceUnstaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1" id="unstakeRateToleranceNote">This value will be ignored when "Use Minimum Tolerance" is checked</p>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Validator Hotkey</label>
+                    <input type="text" id="unstakeValidatorHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Retries (optional)</label>
+                    <input type="text" id="unstakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="unstakeUseEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="unstakeUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="unstakeMevProtection" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="unstakeMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
+                </div>
+                <button onclick="unstake()" class="btn btn-danger">Unstake</button>
+            </div>
+        </div>
+        <!-- Move Stake Tab -->
+        <div id="tabContent-move" style="display:none;">
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Move Stake</h2>
+
+                <div class="input-group">
+                    <label class="input-label">Wallet Name</label>
+                    <select id="moveWalletName" class="input-field">
+                        {% for wallet in wallet_names %}
+                            <option value="{{ wallet }}" {% if loop.first %}selected{% endif %}>{{ wallet }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Amount (optional)</label>
+                    <input type="text" id="moveAmount" class="input-field" placeholder="Leave blank to move all staked TAO">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Origin Network ID</label>
+                    <input type="text" id="originNetuid" class="input-field" placeholder="Enter origin network ID">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Destination Network ID</label>
+                    <input type="text" id="destinationNetuid" class="input-field" placeholder="Enter destination network ID">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Origin Validator Hotkey</label>
+                    <input type="text" id="originHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Destination Validator Hotkey</label>
+                    <input type="text" id="destinationHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Retries (optional)</label>
+                    <input type="text" id="moveRetries" class="input-field" value="1" placeholder="Leave blank for default">
+                </div>
+                <div class="input-group flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="moveUseEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="moveUseEra" class="text-sm text-gray-400 mb-0">Use Era</label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="moveMevProtection" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="moveMevProtection" class="text-sm text-gray-400 mb-0">MEV Protection</label>
+                    </div>
+                </div>
+
+                <button onclick="moveStake()" class="btn">Move Stake</button>
+            </div>
+        </div>
+
+        <div id="tabContent-calc" style="display:none;">
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Tolerance Calculators</h2>
+                <div class="input-group">
+                    <label class="input-label">TAO Or Alpha Amount</label>
+                    <input type="text" id="calcAmount" class="input-field" step="0.000001" min="0">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Network ID</label>
+                    <input type="text" id="calcNetuid" class="input-field">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="calculateMinStakeTolerance()" class="btn">Calculate Min Stake Tolerance</button>
+                    <button onclick="calculateMinUnstakeTolerance()" class="btn">Calculate Min Unstake Tolerance</button>
+                </div>
+                <div id="minStakeToleranceResult" class="mt-4 text-gray-300"></div>
+                <div id="minUnstakeToleranceResult" class="mt-4 text-gray-300"></div>
+            </div>
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Validator List</h2>
+                <div id="validatorListContainer">
+                    <div class="validator-row" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="flex: 1;">5DP5WnFJU1T7V2DeLUwknN88gLZ8rk1Zbc2v8UryMPYPsn71</span>
+                        <button type="button" data-validator="5DP5WnFJU1T7V2DeLUwknN88gLZ8rk1Zbc2v8UryMPYPsn71" class="btn btn-xs copy-validator-btn" style="margin-left:10px;">Copy</button>
+                    </div>
+                    <div class="validator-row" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="flex: 1;">5GeEtY7Ars1FbSKhueoffzLHrYgw3rxn7eF6egicCbWmNs71</span>
+                        <button type="button" data-validator="5GeEtY7Ars1FbSKhueoffzLHrYgw3rxn7eF6egicCbWmNs71" class="btn btn-xs copy-validator-btn" style="margin-left:10px;">Copy</button>
+                    </div>
+                    <div class="validator-row" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="flex: 1;">5CohrGwCpQcZyAc9ZBnHJgN8rFj5sLpz3Lk67YK5N8D3N6J4</span>
+                        <button type="button" data-validator="5CohrGwCpQcZyAc9ZBnHJgN8rFj5sLpz3Lk67YK5N8D3N6J4" class="btn btn-xs copy-validator-btn" style="margin-left:10px;">Copy</button>
+                    </div>
+                </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Use event delegation for robustness
+                        document.getElementById('validatorListContainer').addEventListener('click', function(e) {
+                            if (e.target && e.target.classList.contains('copy-validator-btn')) {
+                                const address = e.target.getAttribute('data-validator');
+                                const button = e.target;
+                                const originalText = button.innerText;
+                                // Function to show copied feedback
+                                function showCopied() {
+                                    button.innerText = 'Copied';
+                                    button.disabled = true;
+                                    setTimeout(function() {
+                                        button.innerText = originalText;
+                                        button.disabled = false;
+                                    }, 1000);
+                                }
+
+                                if (navigator.clipboard) {
+                                    navigator.clipboard.writeText(address).then(function() {
+                                        showCopied();
+                                    }, function(err) {
+                                        // fallback or error feedback
+                                        button.innerText = 'Failed';
+                                        setTimeout(function() {
+                                            button.innerText = originalText;
+                                            button.disabled = false;
+                                        }, 1000);
+                                    });
+                                } else {
+                                    // Fallback for very old browsers
+                                    const textarea = document.createElement('textarea');
+                                    textarea.value = address;
+                                    document.body.appendChild(textarea);
+                                    textarea.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(textarea);
+                                    showCopied();
+                                }
+                            }
+                        });
+                    });
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LocalStorage functions for saving and restoring inputs
+        function saveInputs() {
+            // Save all input values
+            const inputs = {
+                // Stake tab
+                stakeWalletName: document.getElementById('stakeWalletName')?.value || '',
+                stakeAmount: document.getElementById('stakeAmount')?.value || '',
+                netuid: document.getElementById('netuid')?.value || '',
+                rateTolerance: document.getElementById('rateTolerance')?.value || '',
+                minToleranceStaking: document.getElementById('minToleranceStaking')?.checked || false,
+                stakeValidatorHotkey: document.getElementById('stakeValidatorHotkey')?.value || '',
+                stakeRetries: document.getElementById('stakeRetries')?.value || '',
+                stakeUseEra: document.getElementById('stakeUseEra')?.checked || false,
+                stakeMevProtection: document.getElementById('stakeMevProtection')?.checked || false,
+                
+                // Unstake tab
+                unstakeWalletName: document.getElementById('unstakeWalletName')?.value || '',
+                unstakeAmount: document.getElementById('unstakeAmount')?.value || '',
+                unstakeNetuid: document.getElementById('unstakeNetuid')?.value || '',
+                unstakeRateTolerance: document.getElementById('unstakeRateTolerance')?.value || '',
+                minToleranceUnstaking: document.getElementById('minToleranceUnstaking')?.checked || false,
+                unstakeValidatorHotkey: document.getElementById('unstakeValidatorHotkey')?.value || '',
+                unstakeRetries: document.getElementById('unstakeRetries')?.value || '',
+                unstakeUseEra: document.getElementById('unstakeUseEra')?.checked || false,
+                unstakeMevProtection: document.getElementById('unstakeMevProtection')?.checked || false,
+                
+                // Move stake tab
+                moveWalletName: document.getElementById('moveWalletName')?.value || '',
+                moveAmount: document.getElementById('moveAmount')?.value || '',
+                originNetuid: document.getElementById('originNetuid')?.value || '',
+                destinationNetuid: document.getElementById('destinationNetuid')?.value || '',
+                originHotkey: document.getElementById('originHotkey')?.value || '',
+                destinationHotkey: document.getElementById('destinationHotkey')?.value || '',
+                moveRetries: document.getElementById('moveRetries')?.value || '',
+                moveUseEra: document.getElementById('moveUseEra')?.checked || false,
+                moveMevProtection: document.getElementById('moveMevProtection')?.checked || false,
+                
+                // Calculator tab
+                calcAmount: document.getElementById('calcAmount')?.value || '',
+                calcNetuid: document.getElementById('calcNetuid')?.value || '',
+                
+                // Active tab - find which tab is currently active
+                activeTab: (() => {
+                    const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
+                    for (const tab of tabs) {
+                        const tabElement = document.getElementById('tab-' + tab);
+                        if (tabElement && tabElement.classList.contains('tab-active')) {
+                            return tab;
+                        }
+                    }
+                    return localStorage.getItem('activeTab') || 'balances';
+                })()
+            };
+            
+            localStorage.setItem('stakingDashboardInputs', JSON.stringify(inputs));
+        }
+
+        function restoreInputs() {
+            const saved = localStorage.getItem('stakingDashboardInputs');
+            if (!saved) return;
+            
+            try {
+                const inputs = JSON.parse(saved);
+                
+                // Restore stake tab inputs
+                if (inputs.stakeWalletName && document.getElementById('stakeWalletName')) {
+                    document.getElementById('stakeWalletName').value = inputs.stakeWalletName;
+                }
+                if (inputs.stakeAmount !== undefined && document.getElementById('stakeAmount')) {
+                    document.getElementById('stakeAmount').value = inputs.stakeAmount;
+                }
+                if (inputs.netuid !== undefined && document.getElementById('netuid')) {
+                    document.getElementById('netuid').value = inputs.netuid;
+                }
+                if (inputs.rateTolerance !== undefined && document.getElementById('rateTolerance')) {
+                    document.getElementById('rateTolerance').value = inputs.rateTolerance;
+                }
+                if (inputs.minToleranceStaking !== undefined && document.getElementById('minToleranceStaking')) {
+                    document.getElementById('minToleranceStaking').checked = inputs.minToleranceStaking;
+                    toggleRateTolerance();
+                }
+                if (inputs.stakeValidatorHotkey !== undefined && document.getElementById('stakeValidatorHotkey')) {
+                    document.getElementById('stakeValidatorHotkey').value = inputs.stakeValidatorHotkey;
+                }
+                if (inputs.stakeRetries !== undefined && document.getElementById('stakeRetries')) {
+                    document.getElementById('stakeRetries').value = inputs.stakeRetries;
+                }
+                if (inputs.stakeUseEra !== undefined && document.getElementById('stakeUseEra')) {
+                    document.getElementById('stakeUseEra').checked = inputs.stakeUseEra;
+                }
+                if (inputs.stakeMevProtection !== undefined && document.getElementById('stakeMevProtection')) {
+                    document.getElementById('stakeMevProtection').checked = inputs.stakeMevProtection;
+                }
+                
+                // Restore unstake tab inputs
+                if (inputs.unstakeWalletName && document.getElementById('unstakeWalletName')) {
+                    document.getElementById('unstakeWalletName').value = inputs.unstakeWalletName;
+                }
+                if (inputs.unstakeAmount !== undefined && document.getElementById('unstakeAmount')) {
+                    document.getElementById('unstakeAmount').value = inputs.unstakeAmount;
+                }
+                if (inputs.unstakeNetuid !== undefined && document.getElementById('unstakeNetuid')) {
+                    document.getElementById('unstakeNetuid').value = inputs.unstakeNetuid;
+                }
+                if (inputs.unstakeRateTolerance !== undefined && document.getElementById('unstakeRateTolerance')) {
+                    document.getElementById('unstakeRateTolerance').value = inputs.unstakeRateTolerance;
+                }
+                if (inputs.minToleranceUnstaking !== undefined && document.getElementById('minToleranceUnstaking')) {
+                    document.getElementById('minToleranceUnstaking').checked = inputs.minToleranceUnstaking;
+                    toggleUnstakeRateTolerance();
+                }
+                if (inputs.unstakeValidatorHotkey !== undefined && document.getElementById('unstakeValidatorHotkey')) {
+                    document.getElementById('unstakeValidatorHotkey').value = inputs.unstakeValidatorHotkey;
+                }
+                if (inputs.unstakeRetries !== undefined && document.getElementById('unstakeRetries')) {
+                    document.getElementById('unstakeRetries').value = inputs.unstakeRetries;
+                }
+                if (inputs.unstakeUseEra !== undefined && document.getElementById('unstakeUseEra')) {
+                    document.getElementById('unstakeUseEra').checked = inputs.unstakeUseEra;
+                }
+                if (inputs.unstakeMevProtection !== undefined && document.getElementById('unstakeMevProtection')) {
+                    document.getElementById('unstakeMevProtection').checked = inputs.unstakeMevProtection;
+                }
+                
+                // Restore move stake tab inputs
+                if (inputs.moveWalletName && document.getElementById('moveWalletName')) {
+                    document.getElementById('moveWalletName').value = inputs.moveWalletName;
+                }
+                if (inputs.moveAmount !== undefined && document.getElementById('moveAmount')) {
+                    document.getElementById('moveAmount').value = inputs.moveAmount;
+                }
+                if (inputs.originNetuid !== undefined && document.getElementById('originNetuid')) {
+                    document.getElementById('originNetuid').value = inputs.originNetuid;
+                }
+                if (inputs.destinationNetuid !== undefined && document.getElementById('destinationNetuid')) {
+                    document.getElementById('destinationNetuid').value = inputs.destinationNetuid;
+                }
+                if (inputs.originHotkey !== undefined && document.getElementById('originHotkey')) {
+                    document.getElementById('originHotkey').value = inputs.originHotkey;
+                }
+                if (inputs.destinationHotkey !== undefined && document.getElementById('destinationHotkey')) {
+                    document.getElementById('destinationHotkey').value = inputs.destinationHotkey;
+                }
+                if (inputs.moveRetries !== undefined && document.getElementById('moveRetries')) {
+                    document.getElementById('moveRetries').value = inputs.moveRetries;
+                }
+                if (inputs.moveUseEra !== undefined && document.getElementById('moveUseEra')) {
+                    document.getElementById('moveUseEra').checked = inputs.moveUseEra;
+                }
+                if (inputs.moveMevProtection !== undefined && document.getElementById('moveMevProtection')) {
+                    document.getElementById('moveMevProtection').checked = inputs.moveMevProtection;
+                }
+                
+                // Restore calculator tab inputs
+                if (inputs.calcAmount !== undefined && document.getElementById('calcAmount')) {
+                    document.getElementById('calcAmount').value = inputs.calcAmount;
+                }
+                if (inputs.calcNetuid !== undefined && document.getElementById('calcNetuid')) {
+                    document.getElementById('calcNetuid').value = inputs.calcNetuid;
+                }
+                
+                // Restore active tab
+                if (inputs.activeTab) {
+                    showTab(inputs.activeTab);
+                }
+            } catch (e) {
+                console.error('Error restoring inputs:', e);
+            }
+        }
+
+        // Tab logic
+        function showTab(tab) {
+            const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
+
+            tabs.forEach(t => {
+                document.getElementById('tabContent-' + t).style.display = (t === tab) ? '' : 'none';
+                document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
+                document.getElementById('tab-' + t).classList.toggle('tab-inactive', t !== tab);
+            });
+            
+            // Save active tab
+            localStorage.setItem('activeTab', tab);
+        }
+
+        // Helper function to set button loading state
+        function setButtonLoading(button, isLoading) {
+            const originalText = button.getAttribute('data-original-text') || button.innerHTML;
+            if (isLoading) {
+                button.setAttribute('data-original-text', originalText);
+                button.innerHTML = `<span class="loading-spinner"></span>${originalText}`;
+                button.disabled = true;
+            } else {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Stake function
+        async function stake() {
+            const button = document.querySelector('button[onclick="stake()"]');
+            const walletName = document.getElementById('stakeWalletName').value;
+            const amount = document.getElementById('stakeAmount').value;
+            const netuid = document.getElementById('netuid').value;
+            const rateTolerance = document.getElementById('rateTolerance').value;
+            const validatorHotkey = document.getElementById('stakeValidatorHotkey').value;
+            const minToleranceStaking = document.getElementById('minToleranceStaking').checked;
+            const retries = document.getElementById('stakeRetries').value;
+            const useEra = document.getElementById('stakeUseEra').checked;
+            const mevProtection = document.getElementById('stakeMevProtection').checked;
+
+            if (!walletName) {
+                alert('Please select a wallet');
+                return;
+            }
+
+            // Add confirmation dialog
+            const confirmMessage = `Are you sure you want to stake ${amount} TAO from wallet "${walletName}" to validator "${validatorHotkey}" on network ${netuid}?`;
+            //if (!confirm(confirmMessage)) {
+            //    return;
+            //}
+
+            try {
+                setButtonLoading(button, true);
+                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&use_era=${useEra}&mev_protection=${mevProtection}`;
+                if (retries) {
+                    url += `&retries=${retries}`;
+                }
+                const response = await fetch(url);
+                const result = await response.json();
+                alert(JSON.stringify(result));
+            } catch (error) {
+                console.error('Error staking:', error);
+                alert('Error staking. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Unstake function
+        async function unstake() {
+            const button = document.querySelector('button[onclick="unstake()"]');
+            const walletName = document.getElementById('unstakeWalletName').value;
+            const netuid = document.getElementById('unstakeNetuid').value;
+            const validatorHotkey = document.getElementById('unstakeValidatorHotkey').value;
+            const amount = document.getElementById('unstakeAmount').value;
+            const rateTolerance = document.getElementById('unstakeRateTolerance').value;
+            const minToleranceUnstaking = document.getElementById('minToleranceUnstaking').checked;
+            const retries = document.getElementById('unstakeRetries').value;
+            const useEra = document.getElementById('unstakeUseEra').checked;
+            const mevProtection = document.getElementById('unstakeMevProtection').checked;
+
+            if (!walletName) {
+                alert('Please select a wallet');
+                return;
+            }
+
+            // Add confirmation dialog
+            const amountText = amount ? `${amount} TAO` : 'all TAO';
+            const confirmMessage = `Are you sure you want to unstake ${amountText} from wallet "${walletName}" from validator "${validatorHotkey}" on network ${netuid}?`;
+            //if (!confirm(confirmMessage)) {
+            //    return;
+            //}
+
+            try {
+                setButtonLoading(button, true);
+                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&use_era=${useEra}&mev_protection=${mevProtection}`;
+                if (amount) {
+                    url += `&amount=${amount}`;
+                }
+                if (retries) {
+                    url += `&retries=${retries}`;
+                }
+                const response = await fetch(url);
+                const result = await response.json();
+                alert(JSON.stringify(result));
+            } catch (error) {
+                console.error('Error unstaking:', error);
+                alert('Error unstaking. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        async function moveStake() {
+            const button = document.querySelector('button[onclick="moveStake()"]');
+            const walletName = document.getElementById('moveWalletName').value;
+            const amount = document.getElementById('moveAmount').value;
+            const originNetuid = document.getElementById('originNetuid').value;
+            const destinationNetuid = document.getElementById('destinationNetuid').value;
+            const originHotkey = document.getElementById('originHotkey').value;
+            const destinationHotkey = document.getElementById('destinationHotkey').value;
+            const retries = document.getElementById('moveRetries').value;
+            const useEra = document.getElementById('moveUseEra').checked;
+            const mevProtection = document.getElementById('moveMevProtection').checked;
+
+            if (!walletName || !originNetuid || !destinationNetuid) {
+                alert('Please fill out wallet name, origin netuid, and destination netuid.');
+                return;
+            }
+
+            const amountText = amount ? `${amount} ALPHA` : 'all ALPHA';
+            const confirmMessage = `Are you sure you want to move ${amountText} from validator "${originHotkey}" (net ${originNetuid}) to validator "${destinationHotkey}" (net ${destinationNetuid}) using wallet "${walletName}"?`;
+            //if (!confirm(confirmMessage)) return;
+
+            try {
+                setButtonLoading(button, true);
+                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}&use_era=${useEra}&mev_protection=${mevProtection}`;
+                if (amount) url += `&amount=${amount}`;
+                if (retries) url += `&retries=${retries}`;
+
+                const response = await fetch(url);
+                const result = await response.json();
+                alert(JSON.stringify(result, null, 2));
+            } catch (error) {
+                console.error('Error moving stake:', error);
+                alert('Error moving stake. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Calculate min stake tolerance
+        async function calculateMinStakeTolerance() {
+            const button = document.querySelector('button[onclick="calculateMinStakeTolerance()"]');
+            const amount = document.getElementById('calcAmount').value;
+            const netuid = document.getElementById('calcNetuid').value;
+
+            if (!amount || !netuid) {
+                alert('Please enter both TAO amount and Network ID');
+                return;
+            }
+
+            try {
+                setButtonLoading(button, true);
+                const response = await fetch(`/min_stake_tolerance?tao_amount=${amount}&netuid=${netuid}`);
+                const result = await response.json();
+                document.getElementById('minStakeToleranceResult').textContent = 
+                    `Min Stake Tolerance: ${result.min_tolerance.toFixed(6)}`;
+            } catch (error) {
+                console.error('Error calculating min stake tolerance:', error);
+                document.getElementById('minStakeToleranceResult').textContent = 
+                    `Error: ${error.message}`;
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Calculate min unstake tolerance
+        async function calculateMinUnstakeTolerance() {
+            const button = document.querySelector('button[onclick="calculateMinUnstakeTolerance()"]');
+            const amount = document.getElementById('calcAmount').value;
+            const netuid = document.getElementById('calcNetuid').value;
+
+            if (!amount || !netuid) {
+                alert('Please enter both TAO amount and Network ID');
+                return;
+            }
+
+            try {
+                setButtonLoading(button, true);
+                const response = await fetch(`/min_unstake_tolerance?tao_amount=${amount}&netuid=${netuid}`);
+                const result = await response.json();
+                document.getElementById('minUnstakeToleranceResult').textContent = 
+                    `Min Unstake Tolerance: ${result.min_tolerance.toFixed(6)}`;
+            } catch (error) {
+                console.error('Error calculating min unstake tolerance:', error);
+                document.getElementById('minUnstakeToleranceResult').textContent = 
+                    `Error: ${error.message}`;
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Add this new function at the beginning of your script section
+        function toggleRateTolerance() {
+            const rateToleranceInput = document.getElementById('rateTolerance');
+            const minToleranceChecked = document.getElementById('minToleranceStaking').checked;
+            
+            rateToleranceInput.disabled = minToleranceChecked;
+            if (minToleranceChecked) {
+                rateToleranceInput.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                rateToleranceInput.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function toggleUnstakeRateTolerance() {
+            const rateToleranceInput = document.getElementById('unstakeRateTolerance');
+            const minToleranceChecked = document.getElementById('minToleranceUnstaking').checked;
+            
+            rateToleranceInput.disabled = minToleranceChecked;
+            if (minToleranceChecked) {
+                rateToleranceInput.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                rateToleranceInput.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Reset all inputs to defaults
+        function resetAllInputs() {
+            if (!confirm('Are you sure you want to reset all inputs to their default values? This will clear all saved data.')) {
+                return;
+            }
+            
+            // Clear localStorage
+            localStorage.removeItem('stakingDashboardInputs');
+            localStorage.removeItem('activeTab');
+            
+            // Reload the page to reset everything
+            window.location.reload();
+        }
+
+        // Sync use_era checkboxes across all tabs
+        function syncUseEra(checked) {
+            document.getElementById('stakeUseEra').checked = checked;
+            document.getElementById('unstakeUseEra').checked = checked;
+            document.getElementById('moveUseEra').checked = checked;
+            saveInputs();
+        }
+
+        // Sync mev_protection checkboxes across all tabs
+        function syncMevProtection(checked) {
+            document.getElementById('stakeMevProtection').checked = checked;
+            document.getElementById('unstakeMevProtection').checked = checked;
+            document.getElementById('moveMevProtection').checked = checked;
+            saveInputs();
+        }
+
+        // Call this function when the page loads to set initial state
+        document.addEventListener('DOMContentLoaded', function() {
+            // Restore saved inputs first
+            restoreInputs();
+            
+            // Set default tab if no tab was restored
+            const savedTab = localStorage.getItem('activeTab');
+            if (!savedTab) {
+                showTab('balances');
+            }
+            
+            // Set up toggle states
+            toggleRateTolerance();
+            toggleUnstakeRateTolerance();
+            
+            // Add event listeners to all inputs to save on change
+            const inputIds = [
+                'stakeWalletName', 'stakeAmount', 'netuid', 'rateTolerance', 
+                'minToleranceStaking', 'stakeValidatorHotkey', 'stakeRetries',
+                'stakeUseEra', 'stakeMevProtection',
+                'unstakeWalletName', 'unstakeAmount', 'unstakeNetuid', 
+                'unstakeRateTolerance', 'minToleranceUnstaking', 
+                'unstakeValidatorHotkey', 'unstakeRetries',
+                'unstakeUseEra', 'unstakeMevProtection',
+                'moveWalletName', 'moveAmount', 'originNetuid', 
+                'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
+                'moveUseEra', 'moveMevProtection',
+                'calcAmount', 'calcNetuid'
+            ];
+            
+            inputIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.addEventListener('change', saveInputs);
+                    } else {
+                        element.addEventListener('input', saveInputs);
+                        element.addEventListener('change', saveInputs);
+                    }
+                }
+            });
+            
+            // Save active tab when switching tabs
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    setTimeout(saveInputs, 100); // Small delay to ensure tab is switched
+                });
+            });
+
+            // Add event listeners for syncing use_era checkboxes
+            document.getElementById('stakeUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+            document.getElementById('unstakeUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+            document.getElementById('moveUseEra').addEventListener('change', (e) => syncUseEra(e.target.checked));
+
+            // Add event listeners for syncing mev_protection checkboxes
+            document.getElementById('stakeMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+            document.getElementById('unstakeMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+            document.getElementById('moveMevProtection').addEventListener('change', (e) => syncMevProtection(e.target.checked));
+        });
+    </script>
+</body>
+</html> 
