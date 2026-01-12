@@ -190,8 +190,6 @@
     <div class="container">
         <div class="header">
             <a href="https://taostats.io/subnets" target="_blank" class="back-btn">Taostats</a>
-            <h1>Subnet Price Visualization</h1>
-            <p class="subtitle">Bubble size represents the price of each subnet (in TAO) • Historical data from blockchain archive</p>
             <div style="margin-top: 1rem;">
                 <label for="period-select" style="color: #cbd5e1; margin-right: 0.5rem;">Price Change Period:</label>
                 <select id="period-select" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
@@ -205,7 +203,7 @@
             </div>
         </div>
         
-        <div class="stats" id="stats">
+        <!-- <div class="stats" id="stats">
             <div class="stat-item">
                 <div class="stat-value" id="total-subnets">-</div>
                 <div class="stat-label">Total Subnets</div>
@@ -218,7 +216,7 @@
                 <div class="stat-value" id="highest-price">-</div>
                 <div class="stat-label">Highest Price</div>
             </div>
-        </div>
+        </div> -->
         
         <div id="chart-container">
             <div class="loading" id="loading">Loading subnet data...</div>
@@ -265,8 +263,9 @@
                 }));
                 
                 // Clear previous chart
+                const loadingEl = document.getElementById('loading');
+                if (loadingEl) loadingEl.style.display = 'none';
                 document.getElementById('chart-container').innerHTML = '';
-                document.getElementById('loading').style.display = 'none';
                 
                 renderBubbleChart(currentData);
                 updateStats(currentData);
@@ -290,14 +289,15 @@
             loadSubnetData();
             
             document.getElementById('period-select').addEventListener('change', () => {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('loading').textContent = 'Loading data for selected period...';
+                const container = document.getElementById('chart-container');
+                container.innerHTML = '<div class="loading" id="loading">Loading data for selected period...</div>';
                 loadSubnetData();
             });
         });
         
         function showError(message) {
-            document.getElementById('loading').style.display = 'none';
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) loadingEl.style.display = 'none';
             const container = document.getElementById('chart-container');
             container.innerHTML = `<div class="error">${message}</div>`;
         }
