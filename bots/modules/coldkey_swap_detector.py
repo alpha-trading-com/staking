@@ -15,8 +15,8 @@ DEREGISTERED_EVENT_TYPE = "DEREGISTERED"
 
 class ColdkeySwapFetcher:
     def __init__(self):
-        self.subtensor = bt.subtensor(NETWORK)
-        self.subtensor_finney = bt.subtensor("finney")
+        self.subtensor = bt.Subtensor(NETWORK)
+        self.subtensor_finney = bt.Subtensor("finney")
 
         self.last_checked_block = self.subtensor.get_current_block()
         self.subnet_names = []

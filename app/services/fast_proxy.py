@@ -15,7 +15,7 @@ class FastProxy:
         """
         self.network = network
         self.use_era = use_era
-        self.subtensor = bt.subtensor(network=network)
+        self.subtensor = bt.Subtensor(network=network)
         
 
     def init_runtime(self):
@@ -28,7 +28,7 @@ class FastProxy:
 
     def add_stake(
         self, 
-        proxy_wallet: bt.wallet,
+        proxy_wallet: bt.Wallet,
         delegator: str,
         netuid: int, 
         hotkey: str, 
@@ -95,7 +95,7 @@ class FastProxy:
 
     def remove_stake(
         self, 
-        proxy_wallet: bt.wallet,
+        proxy_wallet: bt.Wallet,
         delegator: str,
         netuid: int,
         hotkey: str,
@@ -157,7 +157,7 @@ class FastProxy:
 
     def burned_register(
         self,
-        proxy_wallet: bt.wallet,
+        proxy_wallet: bt.Wallet,
         delegator: str,
         hotkey: str,
         netuid: int,
@@ -194,7 +194,7 @@ class FastProxy:
 
     def move_stake(
         self, 
-        proxy_wallet: bt.wallet,
+        proxy_wallet: bt.Wallet,
         delegator: str,
         origin_hotkey: str, 
         destination_hotkey: str, 
@@ -251,7 +251,7 @@ class FastProxy:
 
     def _do_proxy_call(
         self,
-        proxy_wallet: bt.wallet,
+        proxy_wallet: bt.Wallet,
         delegator: str,
         call,
         proxy_type: str = 'Staking',
@@ -292,7 +292,7 @@ class FastProxy:
 
 
 if __name__ == "__main__":
-    proxy_wallet = bt.wallet(name="black")
+    proxy_wallet = bt.Wallet(name="black")
     delegator = "5F5WLLEzDBXQDdTzDYgbQ3d3JKbM15HhPdFuLMmuzcUW5xG2"
     amount = input("Enter amount to stake: ")
     netuid = input("Enter netuid: ")

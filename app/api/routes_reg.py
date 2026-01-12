@@ -32,7 +32,7 @@ def wallet_list(wallet_name: str):
 
 @router.post('/new_hotkey')
 def create_hotkey(wallet_name: str, hotkey_name: str):
-    wallet = bt.wallet(name=wallet_name, hotkey=hotkey_name)
+    wallet = bt.Wallet(name=wallet_name, hotkey=hotkey_name)
     wallet.create_new_hotkey(
         n_words=12,
         use_password=False,

@@ -24,8 +24,8 @@ class RonProxy:
         
         self.network = network
         self.delegator = delegator
-        self.proxy_wallet = bt.wallet(name=proxy_wallet)
-        self.subtensor = bt.subtensor(network=network)
+        self.proxy_wallet = bt.Wallet(name=proxy_wallet)
+        self.subtensor = bt.Subtensor(network=network)
         self.substrate = SubstrateInterface(
             url=RPC_ENDPOINTS[self.network],
             ss58_format=42,

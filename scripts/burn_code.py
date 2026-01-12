@@ -23,8 +23,8 @@ def set_weights_to_uid0(netuid: int, wallet_name: str, hotkey: str, weight_value
     """
     
     # Initialize wallet and subtensor
-    wallet = bt.wallet(name=wallet_name, hotkey=hotkey)
-    subtensor = bt.subtensor(network="finney")
+    wallet = bt.Wallet(name=wallet_name, hotkey=hotkey)
+    subtensor = bt.Subtensor(network="finney")
     
     
     # Get metagraph

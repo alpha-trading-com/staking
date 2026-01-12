@@ -12,7 +12,7 @@ def get_mnemonic(wallet):
 
 
 def get_hotkeys(wallet_name: str):
-    wallets = get_hotkey_wallets_for_wallet(bt.wallet(name=wallet_name))
+    wallets = get_hotkey_wallets_for_wallet(bt.Wallet(name=wallet_name))
     import re
 
     def extract_number(hotkey_name):

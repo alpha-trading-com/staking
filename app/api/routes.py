@@ -119,7 +119,7 @@ def move_stake(
     )
 
 
-archive_subtensor = bt.subtensor("archive")
+archive_subtensor = bt.Subtensor("archive")
 @router.get("/subnets_data")
 def get_subnets_data(
     period_minutes: int = 60,
