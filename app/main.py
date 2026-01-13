@@ -12,6 +12,7 @@ from app.services.wallets import wallets
 from app.services.stake import stake_service
 from app.services.auth import get_current_username
 from utils.stake_list import get_stake_list
+from utils.stake_list_v2 import get_stake_list_v2
 
 
 app = fastapi.FastAPI()
@@ -74,6 +75,24 @@ def stake_list(wallet_name: str):
 def stake_list_v2(wallet_name: str):
     subtensor = stake_service.subtensor
     stake_list = get_stake_list(subtensor, wallet_name)
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>{wallet_name} | Stake List</title>
+    </head>
+    <body>
+        <pre>{stake_list}</pre>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
+
+@app.get("/stake_list_v3")
+def stake_list_v3(wallet_name: str):
+    subtensor = stake_service.subtensor
+    stake_list = get_stake_list_v2(subtensor, wallet_name)
     html_content = f"""
     <!DOCTYPE html>
     <html>
