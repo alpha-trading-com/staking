@@ -34,6 +34,7 @@ class Proxy:
         hotkey: str, 
         amount: Balance, 
         tolerance: float = 0.005,
+        allow_partial: bool = False,
     ) -> tuple[bool, str]:
         """
         Add stake to a subnet.
@@ -74,7 +75,7 @@ class Proxy:
                 "netuid": netuid,
                 "amount_staked": amount.rao,
                 "limit_price": price_with_tolerance,
-                "allow_partial": False,
+                "allow_partial": allow_partial,
             }
         )
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
@@ -95,6 +96,7 @@ class Proxy:
         hotkey: str,
         amount: Balance,
         tolerance: float = 0.005,
+        allow_partial: bool = False,
     ) -> tuple[bool, str]:
         """
         Remove stake from a subnet.
@@ -131,7 +133,7 @@ class Proxy:
                 "netuid": netuid,
                 "amount_unstaked": amount.rao - 1,
                 "limit_price": price_with_tolerance,
-                "allow_partial": False,
+                "allow_partial": allow_partial,
             }
         )
         free_balance = self.subtensor.get_balance(
