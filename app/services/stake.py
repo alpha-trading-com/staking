@@ -159,8 +159,16 @@ class StakeService:
                 netuid=netuid
             )
         else:
-            # Convert TAO amount to Balance object
-            amount_balance = bt.Balance.from_tao(amount, netuid)
+            if amount < 1:
+                # Unstake percentage of the total staked amount (100 * amount percent)
+                total_stake = self.subtensor.get_stake(
+                    coldkey_ss58=delegator,
+                    hotkey_ss58=dest_hotkey,
+                    netuid=netuid
+                )
+                amount_balance = total_stake * amount
+            else:
+                amount_balance = bt.Balance.from_tao(amount, netuid)
 
         if amount_balance.rao <= 0:
             return {
