@@ -107,7 +107,7 @@ class StakeService:
                     netuid=netuid,
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
-                    allow_partial=min_tolerance_staking,
+                    allow_partial=False,
                 )
                 
                 if result:
@@ -193,7 +193,7 @@ class StakeService:
                     amount=amount_balance,
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
-                    allow_partial=min_tolerance_unstaking,
+                    allow_partial=False,
                 )
                 if result:
                     success = True
