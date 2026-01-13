@@ -263,7 +263,14 @@ class StakeService:
                 netuid=origin_netuid
             )
         else:
-            amount_balance = bt.Balance.from_tao(amount, origin_netuid)   
+            if amount < 1:
+                amount_balance = self.subtensor.get_stake(
+                    coldkey_ss58=delegator,
+                    hotkey_ss58=origin_hotkey,
+                    netuid=origin_netuid
+                ) * amount
+            else:
+                amount_balance = bt.Balance.from_tao(amount, origin_netuid)   
         
         
         # Execute move stake with retry mechanism
