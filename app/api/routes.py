@@ -36,6 +36,7 @@ def stake(
     dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
     rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
     min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
+    allow_partial: bool = False,
     retries: int = settings.DEFAULT_RETRIES,
     username: str = Depends(get_current_username)
 ):
@@ -57,6 +58,7 @@ def stake(
         dest_hotkey=dest_hotkey,
         rate_tolerance=rate_tolerance,
         min_tolerance_staking=min_tolerance_staking,
+        allow_partial=allow_partial,
         retries=retries
     )
 
@@ -69,6 +71,7 @@ def unstake(
     dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
     rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
     min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
+    allow_partial: bool = False,
     retries: int = settings.DEFAULT_RETRIES,
     username: str = Depends(get_current_username)
 ):
@@ -90,6 +93,7 @@ def unstake(
         dest_hotkey=dest_hotkey,
         rate_tolerance=rate_tolerance,
         min_tolerance_unstaking=min_tolerance_unstaking,
+        allow_partial=allow_partial,
         retries=retries
     )
 

@@ -62,6 +62,7 @@ class StakeService:
         dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
         rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
         min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
+        allow_partial: bool = False,
         retries: int = settings.DEFAULT_RETRIES
     ) -> Dict[str, Any]:
         """
@@ -74,6 +75,7 @@ class StakeService:
             dest_hotkey: Destination hotkey address
             rate_tolerance: Tolerance for rate calculations
             min_tolerance_staking: Whether to use minimum tolerance
+            allow_partial: Whether to allow partial staking if full amount cannot be staked
             retries: Number of retry attempts
             
         Returns:
@@ -107,7 +109,7 @@ class StakeService:
                     netuid=netuid,
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
-                    allow_partial=False,
+                    allow_partial=allow_partial,
                 )
                 
                 if result:
@@ -131,6 +133,7 @@ class StakeService:
         dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
         rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
         min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
+        allow_partial: bool = False,
         retries: int = settings.DEFAULT_RETRIES
     ) -> Dict[str, Any]:
         """
@@ -143,6 +146,7 @@ class StakeService:
             dest_hotkey: Destination hotkey address
             rate_tolerance: Tolerance for rate calculations
             min_tolerance_unstaking: Whether to use minimum tolerance
+            allow_partial: Whether to allow partial unstaking if full amount cannot be unstaked
             retries: Number of retry attempts
             
         Returns:
@@ -201,7 +205,7 @@ class StakeService:
                     amount=amount_balance,
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
-                    allow_partial=False,
+                    allow_partial=allow_partial,
                 )
                 if result:
                     success = True

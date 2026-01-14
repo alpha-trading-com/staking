@@ -246,9 +246,12 @@
                         <button type="button" onclick="calculateAndSetMinTolerance()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap;">Calculate Min Tolerance</button>
                         <input type="checkbox" id="minToleranceStaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleRateTolerance()">
                         <label for="minToleranceStaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
+                        <input type="checkbox" id="allowPartialStaking" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="allowPartialStaking" class="text-sm text-red-500 mb-0">Allow Partial Staking</label>
                     </div>
                     <p class="text-sm text-gray-400 mt-1" id="rateToleranceNote">This value will be ignored when "Use Minimum Tolerance" is checked</p>
                 </div>
+                
                 <div class="input-group">
                     <label class="input-label">Validator Hotkey</label>
                     <input type="text" id="stakeValidatorHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
@@ -286,6 +289,8 @@
                         <button onclick="unstake()" class="btn btn-danger">Unstake</button>
                         <input type="checkbox" id="minToleranceUnstaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleUnstakeRateTolerance()">
                         <label for="minToleranceUnstaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
+                        <input type="checkbox" id="allowPartialUnstaking" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="allowPartialUnstaking" class="text-sm text-red-500 mb-0">Allow Partial Unstaking</label>
                     </div>
                     <p class="text-sm text-gray-400 mt-1" id="unstakeRateToleranceNote">This value will be ignored when "Use Minimum Tolerance" is checked</p>
                 </div>
@@ -440,6 +445,7 @@
                 netuid: document.getElementById('netuid')?.value || '',
                 rateTolerance: document.getElementById('rateTolerance')?.value || '',
                 minToleranceStaking: document.getElementById('minToleranceStaking')?.checked || false,
+                allowPartialStaking: document.getElementById('allowPartialStaking')?.checked || false,
                 stakeValidatorHotkey: document.getElementById('stakeValidatorHotkey')?.value || '',
                 stakeRetries: document.getElementById('stakeRetries')?.value || '',
                 
@@ -449,6 +455,7 @@
                 unstakeNetuid: document.getElementById('unstakeNetuid')?.value || '',
                 unstakeRateTolerance: document.getElementById('unstakeRateTolerance')?.value || '',
                 minToleranceUnstaking: document.getElementById('minToleranceUnstaking')?.checked || false,
+                allowPartialUnstaking: document.getElementById('allowPartialUnstaking')?.checked || false,
                 unstakeValidatorHotkey: document.getElementById('unstakeValidatorHotkey')?.value || '',
                 unstakeRetries: document.getElementById('unstakeRetries')?.value || '',
                 
@@ -505,6 +512,9 @@
                     document.getElementById('minToleranceStaking').checked = inputs.minToleranceStaking;
                     toggleRateTolerance();
                 }
+                if (inputs.allowPartialStaking !== undefined && document.getElementById('allowPartialStaking')) {
+                    document.getElementById('allowPartialStaking').checked = inputs.allowPartialStaking;
+                }
                 if (inputs.stakeValidatorHotkey !== undefined && document.getElementById('stakeValidatorHotkey')) {
                     document.getElementById('stakeValidatorHotkey').value = inputs.stakeValidatorHotkey;
                 }
@@ -528,6 +538,9 @@
                 if (inputs.minToleranceUnstaking !== undefined && document.getElementById('minToleranceUnstaking')) {
                     document.getElementById('minToleranceUnstaking').checked = inputs.minToleranceUnstaking;
                     toggleUnstakeRateTolerance();
+                }
+                if (inputs.allowPartialUnstaking !== undefined && document.getElementById('allowPartialUnstaking')) {
+                    document.getElementById('allowPartialUnstaking').checked = inputs.allowPartialUnstaking;
                 }
                 if (inputs.unstakeValidatorHotkey !== undefined && document.getElementById('unstakeValidatorHotkey')) {
                     document.getElementById('unstakeValidatorHotkey').value = inputs.unstakeValidatorHotkey;
@@ -612,6 +625,7 @@
             const rateTolerance = document.getElementById('rateTolerance').value;
             const validatorHotkey = document.getElementById('stakeValidatorHotkey').value;
             const minToleranceStaking = document.getElementById('minToleranceStaking').checked;
+            const allowPartial = document.getElementById('allowPartialStaking').checked;
             const retries = document.getElementById('stakeRetries').value;
 
             if (!walletName) {
@@ -627,7 +641,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}`;
+                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}`;
                 if (retries) {
                     url += `&retries=${retries}`;
                 }
@@ -651,6 +665,7 @@
             const amount = document.getElementById('unstakeAmount').value;
             const rateTolerance = document.getElementById('unstakeRateTolerance').value;
             const minToleranceUnstaking = document.getElementById('minToleranceUnstaking').checked;
+            const allowPartial = document.getElementById('allowPartialUnstaking').checked;
             const retries = document.getElementById('unstakeRetries').value;
 
             if (!walletName) {
@@ -667,7 +682,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}`;
+                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}`;
                 if (amount) {
                     url += `&amount=${amount}`;
                 }
@@ -860,9 +875,9 @@
             // Add event listeners to all inputs to save on change
             const inputIds = [
                 'stakeWalletName', 'stakeAmount', 'netuid', 'rateTolerance', 
-                'minToleranceStaking', 'stakeValidatorHotkey', 'stakeRetries',
+                'minToleranceStaking', 'allowPartialStaking', 'stakeValidatorHotkey', 'stakeRetries',
                 'unstakeWalletName', 'unstakeAmount', 'unstakeNetuid', 
-                'unstakeRateTolerance', 'minToleranceUnstaking', 
+                'unstakeRateTolerance', 'minToleranceUnstaking', 'allowPartialUnstaking',
                 'unstakeValidatorHotkey', 'unstakeRetries',
                 'moveWalletName', 'moveAmount', 'originNetuid', 
                 'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
