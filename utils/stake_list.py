@@ -61,7 +61,8 @@ def get_stake_list(subtensor, wallet_ss58):
         f"Wallet:\n"
         f"  Coldkey SS58: {wallet_ss58}\n"
         f"  Free Balance: {balance}\n"
-        f"  Total TAO Value (TAO): {total_value}"
+        f"  Total Staked Value (TAO): {total_value}\n"
+        f"  Total Value (TAO): {total_value + balance}"
     )
 
     table_str = console.file.getvalue()
