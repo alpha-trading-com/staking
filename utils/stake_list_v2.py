@@ -1,4 +1,5 @@
 import bittensor as bt
+from bittensor import Balance
 
 from rich.console import Console
 from rich.table import Table
@@ -81,6 +82,7 @@ def get_stake_list_v2(subtensor, wallet_ss58):
 
 
     balance = subtensor.get_balance(wallet_ss58)
+    total_value = Balance.from_tao(total_value)
     
     console = Console(file=StringIO(), force_terminal=False)
     console.print(table)
@@ -89,8 +91,8 @@ def get_stake_list_v2(subtensor, wallet_ss58):
         f"Wallet:\n"
         f"  Coldkey SS58: {wallet_ss58}\n"
         f"  Free Balance: {balance}\n"
-        f"  Total Staked Value (TAO): {total_value}\n"
-        f"  Total Value (TAO): {total_value + balance}"
+        f"  Total Staked Value : {total_value}\n"
+        f"  Total Value : {total_value + balance}"
     )
 
     table_str = console.file.getvalue()
