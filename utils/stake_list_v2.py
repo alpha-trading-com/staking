@@ -89,7 +89,7 @@ def get_stake_list_v2(subtensor, wallet_ss58):
         f"Wallet:\n"
         f"  Coldkey SS58: {wallet_ss58}\n"
         f"  Free Balance: {balance}\n"
-        f"  Total Staked Value (TAO): {total_value}"
+        f"  Total Staked Value (TAO): {total_value}\n"
         f"  Total Value (TAO): {total_value + balance}"
     )
 
