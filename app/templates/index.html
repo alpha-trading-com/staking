@@ -207,7 +207,11 @@
             <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
             <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Tolerance Calculators</button>
             <a href="/subnets" class="tab tab-inactive" style="padding: 0.35rem 1rem; display: flex; align-items: center; text-decoration: none;">Subnets 🔵</a>
-            <button class="btn" onclick="resetAllInputs()" style="margin-left: auto; padding: 0.35rem 0.8rem; font-size: 0.9rem; background: #dc2626;">Reset All</button>
+            <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="useEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                <label for="useEra" class="text-sm text-red-500 mb-0" style="white-space: nowrap;">Use Era</label>
+                <button class="btn" onclick="resetAllInputs()" style="padding: 0.35rem 0.8rem; font-size: 0.9rem; background: #dc2626;">Reset All</button>
+            </div>
         </div>
         <!-- Tab Contents -->
         <div id="tabContent-balances">
@@ -472,6 +476,9 @@
                 calcAmount: document.getElementById('calcAmount')?.value || '',
                 calcNetuid: document.getElementById('calcNetuid')?.value || '',
                 
+                // Global settings
+                useEra: document.getElementById('useEra')?.checked !== undefined ? document.getElementById('useEra').checked : true,
+                
                 // Active tab - find which tab is currently active
                 activeTab: (() => {
                     const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
@@ -572,6 +579,11 @@
                     document.getElementById('moveRetries').value = inputs.moveRetries;
                 }
                 
+                // Restore useEra checkbox
+                if (inputs.useEra !== undefined && document.getElementById('useEra')) {
+                    document.getElementById('useEra').checked = inputs.useEra;
+                }
+                
                 // Restore calculator tab inputs
                 if (inputs.calcAmount !== undefined && document.getElementById('calcAmount')) {
                     document.getElementById('calcAmount').value = inputs.calcAmount;
@@ -627,6 +639,7 @@
             const minToleranceStaking = document.getElementById('minToleranceStaking').checked;
             const allowPartial = document.getElementById('allowPartialStaking').checked;
             const retries = document.getElementById('stakeRetries').value;
+            const useEra = document.getElementById('useEra').checked;
 
             if (!walletName) {
                 alert('Please select a wallet');
@@ -641,7 +654,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}`;
+                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
                 if (retries) {
                     url += `&retries=${retries}`;
                 }
@@ -667,6 +680,7 @@
             const minToleranceUnstaking = document.getElementById('minToleranceUnstaking').checked;
             const allowPartial = document.getElementById('allowPartialUnstaking').checked;
             const retries = document.getElementById('unstakeRetries').value;
+            const useEra = document.getElementById('useEra').checked;
 
             if (!walletName) {
                 alert('Please select a wallet');
@@ -682,7 +696,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}`;
+                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
                 if (amount) {
                     url += `&amount=${amount}`;
                 }
@@ -709,6 +723,7 @@
             const originHotkey = document.getElementById('originHotkey').value;
             const destinationHotkey = document.getElementById('destinationHotkey').value;
             const retries = document.getElementById('moveRetries').value;
+            const useEra = document.getElementById('useEra').checked;
 
             if (!walletName || !originNetuid || !destinationNetuid) {
                 alert('Please fill out wallet name, origin netuid, and destination netuid.');
@@ -721,7 +736,7 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}`;
+                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}&use_era=${useEra}`;
                 if (amount) url += `&amount=${amount}`;
                 if (retries) url += `&retries=${retries}`;
 
@@ -881,7 +896,7 @@
                 'unstakeValidatorHotkey', 'unstakeRetries',
                 'moveWalletName', 'moveAmount', 'originNetuid', 
                 'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
-                'calcAmount', 'calcNetuid'
+                'calcAmount', 'calcNetuid', 'useEra'
             ];
             
             inputIds.forEach(id => {

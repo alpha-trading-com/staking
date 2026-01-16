@@ -38,6 +38,7 @@ def stake(
     min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
     allow_partial: bool = False,
     retries: int = settings.DEFAULT_RETRIES,
+    use_era: bool = settings.USE_ERA,
     username: str = Depends(get_current_username)
 ):
     # Validate retries parameter
@@ -59,7 +60,8 @@ def stake(
         rate_tolerance=rate_tolerance,
         min_tolerance_staking=min_tolerance_staking,
         allow_partial=allow_partial,
-        retries=retries
+        retries=retries,
+        use_era=use_era
     )
 
 
@@ -73,6 +75,7 @@ def unstake(
     min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
     allow_partial: bool = False,
     retries: int = settings.DEFAULT_RETRIES,
+    use_era: bool = settings.USE_ERA,
     username: str = Depends(get_current_username)
 ):
     # Validate retries parameter
@@ -94,7 +97,8 @@ def unstake(
         rate_tolerance=rate_tolerance,
         min_tolerance_unstaking=min_tolerance_unstaking,
         allow_partial=allow_partial,
-        retries=retries
+        retries=retries,
+        use_era=use_era
     )
 
 @router.get("/move_stake")
@@ -106,6 +110,7 @@ def move_stake(
     origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
     destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
     retries: int = settings.DEFAULT_RETRIES,
+    use_era: bool = settings.USE_ERA,
     username: str = Depends(get_current_username)
 ):
     # Validate retries parameter
@@ -119,7 +124,8 @@ def move_stake(
         destination_hotkey=destination_hotkey,
         origin_netuid=origin_netuid,
         destination_netuid=destination_netuid,
-        retries=retries
+        retries=retries,
+        use_era=use_era
     )
 
 

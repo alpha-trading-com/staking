@@ -63,7 +63,8 @@ class StakeService:
         rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
         min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
         allow_partial: bool = False,
-        retries: int = settings.DEFAULT_RETRIES
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA
     ) -> Dict[str, Any]:
         """
         Execute staking operation with retry mechanism and error handling.
@@ -77,6 +78,7 @@ class StakeService:
             min_tolerance_staking: Whether to use minimum tolerance
             allow_partial: Whether to allow partial staking if full amount cannot be staked
             retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation
             
         Returns:
             Dict containing success status, result, and min_tolerance
@@ -110,6 +112,7 @@ class StakeService:
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
                     allow_partial=allow_partial,
+                    use_era=use_era,
                 )
                 
                 if result:
@@ -134,7 +137,8 @@ class StakeService:
         rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
         min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
         allow_partial: bool = False,
-        retries: int = settings.DEFAULT_RETRIES
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA
     ) -> Dict[str, Any]:
         """
         Execute unstaking operation with retry mechanism and error handling.
@@ -148,6 +152,7 @@ class StakeService:
             min_tolerance_unstaking: Whether to use minimum tolerance
             allow_partial: Whether to allow partial unstaking if full amount cannot be unstaked
             retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation
             
         Returns:
             Dict containing success status, result, and min_tolerance
@@ -206,6 +211,7 @@ class StakeService:
                     hotkey=dest_hotkey,
                     tolerance=rate_tolerance,
                     allow_partial=allow_partial,
+                    use_era=use_era,
                 )
                 if result:
                     success = True
@@ -253,10 +259,24 @@ class StakeService:
         amount: Optional[float] = None, 
         origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY, 
         destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY, 
-        retries: int = settings.DEFAULT_RETRIES
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA
     ) -> Dict[str, Any]:
         """
         Execute move stake operation with retry mechanism and error handling.
+        
+        Args:
+            wallet_name: Name of the wallet to use
+            origin_netuid: Source subnet ID
+            destination_netuid: Destination subnet ID
+            amount: Amount to move (if None, moves all available)
+            origin_hotkey: Origin hotkey address
+            destination_hotkey: Destination hotkey address
+            retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation
+            
+        Returns:
+            Dict containing success status and error message
         """
         wallet, delegator = self.wallets[wallet_name]
 
@@ -276,7 +296,6 @@ class StakeService:
             else:
                 amount_balance = bt.Balance.from_tao(amount, origin_netuid)   
         
-        
         # Execute move stake with retry mechanism
         success = False
         msg = None
@@ -291,6 +310,7 @@ class StakeService:
                     destination_hotkey=destination_hotkey,
                     origin_netuid=origin_netuid,
                     destination_netuid=destination_netuid,
+                    use_era=use_era,
                 )
                 if result:
                     success = True

@@ -35,6 +35,7 @@ class Proxy:
         amount: Balance, 
         tolerance: float = 0.005,
         allow_partial: bool = False,
+        use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         """
         Add stake to a subnet.
@@ -45,6 +46,8 @@ class Proxy:
             hotkey: Hotkey address
             amount: Amount to stake
             tolerance: Tolerance for stake amount
+            allow_partial: Whether to allow partial staking
+            use_era: Whether to use era parameter (overrides instance default if provided)
         """
         free_balance = self.subtensor.get_balance(
             address=delegator,
@@ -78,7 +81,7 @@ class Proxy:
                 "allow_partial": allow_partial,
             }
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
         new_free_balance = self.subtensor.get_balance(
             address=delegator,
         )
@@ -97,6 +100,7 @@ class Proxy:
         amount: Balance,
         tolerance: float = 0.005,
         allow_partial: bool = False,
+        use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         """
         Remove stake from a subnet.
@@ -106,7 +110,9 @@ class Proxy:
             netuid: Network/subnet ID
             hotkey: Hotkey address
             amount: Amount to unstake (if not using --all)
-            all: Whether to unstake all available balance
+            tolerance: Tolerance for unstake amount
+            allow_partial: Whether to allow partial unstaking
+            use_era: Whether to use era parameter (overrides instance default if provided)
         """
         subnet_info = self.subtensor.subnet(netuid)
         if not subnet_info:
@@ -140,7 +146,7 @@ class Proxy:
             address=delegator,
         )
         
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
         new_free_balance = self.subtensor.get_balance(
             address=delegator,
         )
@@ -155,6 +161,7 @@ class Proxy:
         delegator: str,
         hotkey: str,
         netuid: int,
+        use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         """
         Do burned register.
@@ -164,6 +171,7 @@ class Proxy:
             delegator: Delegator address
             hotkey: Hotkey address
             netuid: Subnet ID
+            use_era: Whether to use era parameter (overrides instance default if provided)
         """
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
@@ -179,7 +187,7 @@ class Proxy:
             }
         )
         print(f"Call: {call}")
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, 'Registration')
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, 'Registration', use_era=use_era)
         print(f"Register successfully: {is_success}")
         print(f"Error: {error_message}")
         return is_success, error_message
@@ -192,17 +200,21 @@ class Proxy:
         destination_hotkey: str, 
         origin_netuid: int, 
         destination_netuid: int, 
-        amount: Balance, 
+        amount: Balance,
+        use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         """
         Move stake between validators
         
         Args:
-            hotkey: Hotkey address
+            proxy_wallet: Proxy wallet
+            delegator: Delegator address
+            origin_hotkey: Origin hotkey address
+            destination_hotkey: Destination hotkey address
             origin_netuid: Source subnet ID
-            dest_netuid: Destination subnet ID
-            amount: Amount to swap (if not using --all)
-            all: Whether to swap all available balance
+            destination_netuid: Destination subnet ID
+            amount: Amount to move
+            use_era: Whether to use era parameter (overrides instance default if provided)
         """
         balance = self.subtensor.get_stake(
             coldkey_ss58=delegator,
@@ -227,7 +239,7 @@ class Proxy:
                 'alpha_amount': amount.rao - 1,
             }
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
         new_balance = self.subtensor.get_stake(
             coldkey_ss58=delegator,
             hotkey_ss58=origin_hotkey,
@@ -245,6 +257,7 @@ class Proxy:
         delegator: str,
         call,
         proxy_type: str = 'Staking',
+        use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
@@ -258,7 +271,9 @@ class Proxy:
                 'call': call,
             }
         )
-        if self.use_era:
+        # Use provided use_era if given, otherwise use instance default
+        use_era_value = use_era if use_era is not None else self.use_era
+        if use_era_value:
             extrinsic = self.substrate.create_signed_extrinsic(
                 call=proxy_call,
                 keypair=proxy_wallet.coldkey,
