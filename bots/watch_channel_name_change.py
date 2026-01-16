@@ -403,7 +403,7 @@ def main():
     proxy.init_runtime()
     staker = ChannelMonitorStaker(proxy)
     # Configuration - Replace these with your actual values
-    BOT_TOKEN = "MTIwNjY0MzY5NDEyODg1NzEwMw.GkBLIU.9yxK6xuxJbqYOJ7IcBFekUufJqNRCu-YqNE_I8"
+    BOT_TOKEN = "your discord token"
     GUILD_ID = "799672011265015819"
     
     # Optional: Add webhook URL for notifications
