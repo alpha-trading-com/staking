@@ -3,7 +3,7 @@
 Proxy for Bittensor Staking - Ensuring 100% confidence and security for Subnet alpha token traders
 
 Bots list which can be found here:
-    https://github.com/pycorn0729/bt-script
+    https://github.com/alpha-trading-com/bots
 
 # How to use
 
