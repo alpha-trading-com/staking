@@ -16,13 +16,14 @@ from app.core.config import settings
 from app.services.auth import get_current_username
 from app.constants import ROUND_TABLE_HOTKEY, NETWORK
 from utils.tolerance import get_stake_min_tolerance, get_unstake_min_tolerance
+from utils.stake_list_v2 import get_stake_list_v2
 
 app = fastapi.FastAPI()
 
 # Set up templates
 templates = Jinja2Templates(directory="app/templates")
 
-wallet_names = ["green"]
+wallet_names = ["soon"]
 wallets: Dict[str, bt.Wallet] = {}
 
 def unlock_wallets():
@@ -296,3 +297,31 @@ def move_stake(
                     "error": str(e),
                     "result": result,
                 }
+
+
+@app.get("/stake_list_v3")
+def stake_list_v3(wallet_name: str):
+    """Display stake list for a wallet using get_stake_list_v2"""
+    if wallet_name not in wallets:
+        return HTMLResponse(
+            content=f"<html><body><h1>Error</h1><p>Wallet '{wallet_name}' not found</p></body></html>",
+            status_code=404
+        )
+    
+    wallet = wallets[wallet_name]
+    subtensor = bt.Subtensor(network=NETWORK)
+    coldkey_ss58 = wallet.coldkeypub.ss58_address
+    stake_list = get_stake_list_v2(subtensor, coldkey_ss58)
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>{wallet_name} | Stake List</title>
+    </head>
+    <body>
+        <pre>{stake_list}</pre>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
