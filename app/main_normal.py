@@ -3,7 +3,7 @@ import fastapi
 import bittensor as bt
 import uvicorn
 import subprocess
-from typing import Dict
+from typing import Dict, Optional
 from fastapi import Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from app.core.config import settings
 from app.services.auth import get_current_username
 from app.constants import ROUND_TABLE_HOTKEY, NETWORK
+from utils.tolerance import get_stake_min_tolerance, get_unstake_min_tolerance
 
 app = fastapi.FastAPI()
 
@@ -52,19 +53,47 @@ def read_root(request: fastapi.Request, username: str = Depends(get_current_user
                 balance = subtensor.get_balance(wallet.coldkey.ss58_address)
                 balance_html += f"""
                     <div class="balance-container">
-                        <div class="balance-title"><a target="_blank" href="/stake_list?wallet_name={wallet_name}" style="text-decoration: none; color: inherit; cursor: pointer; text-decoration: underline;">{wallet_name}</a></div>
+                        <div class="balance-title"><a target="_blank" href="/stake_list_v3?wallet_name={wallet_name}" style="text-decoration: none; color: inherit; cursor: pointer; text-decoration: underline;">{wallet_name}</a></div>
                         <div class="balance-amount">{balance} TAO</div>
                     </div>
                 """
             return balance_html
 
         return templates.TemplateResponse(
-            "index_normal.html",
+            "index.html",
             {"request": request, "balance_html": get_balance_html(), "wallet_names": wallet_names}
         )
     except Exception as e:
         print(e)
 
+
+
+@app.get("/min_stake_tolerance")
+def min_stake_tolerance(
+    tao_amount: float,
+    netuid: int,
+):
+    """Calculate minimum stake tolerance for a given TAO amount and netuid"""
+    try:
+        subtensor = bt.Subtensor(network=NETWORK)
+        min_tol = get_stake_min_tolerance(tao_amount, netuid, subtensor)
+        return {"min_tolerance": min_tol}
+    except Exception as e:
+        return {"error": str(e), "min_tolerance": 0.0}
+
+
+@app.get("/min_unstake_tolerance")
+def min_unstake_tolerance(
+    tao_amount: float,
+    netuid: int,
+):
+    """Calculate minimum unstake tolerance for a given TAO amount and netuid"""
+    try:
+        subtensor = bt.Subtensor(network=NETWORK)
+        min_tol = get_unstake_min_tolerance(tao_amount, netuid, subtensor)
+        return {"min_tolerance": min_tol}
+    except Exception as e:
+        return {"error": str(e), "min_tolerance": 0.0}
 
 
 @app.get("/stake")
@@ -75,6 +104,8 @@ def stake(
     dest_hotkey: str = ROUND_TABLE_HOTKEY, 
     rate_tolerance: float = 0.005,
     min_tolerance_staking: bool = True,
+    allow_partial: bool = False,
+    use_era: bool = False,
     retries: int = 1,
     username: str = Depends(get_current_username)
 ):
@@ -84,16 +115,26 @@ def stake(
     wallet = wallets[wallet_name]
     subtensor = bt.Subtensor(network=NETWORK)
 
+    # Calculate rate tolerance if min_tolerance_staking is True
+    if min_tolerance_staking:
+        try:
+            min_tol = get_stake_min_tolerance(tao_amount, netuid, subtensor)
+            rate_tolerance = min_tol + 0.001
+        except Exception as e:
+            print(f"Error calculating min tolerance: {e}")
+            # Continue with provided rate_tolerance
+    
     while retries > 0:
         try:
-
             result = subtensor.add_stake(
                 netuid=netuid,
-                amount= bt.Balance.from_tao(tao_amount, netuid),
+                amount=bt.Balance.from_tao(tao_amount, netuid),
                 wallet=wallet,
                 hotkey_ss58=dest_hotkey,
                 safe_staking=True,
-                rate_tolerance=rate_tolerance
+                rate_tolerance=rate_tolerance,
+                allow_partial_stake=allow_partial,
+                period= 1 if use_era else 128,
             )
             if not result:
                 raise Exception("Stake failed")
@@ -107,6 +148,7 @@ def stake(
             if retries == 0:
                 return {
                     "success": False,
+                    "error": str(e),
                     "result": result,
                 }
 
@@ -119,6 +161,8 @@ def unstake(
     dest_hotkey: str = ROUND_TABLE_HOTKEY,
     rate_tolerance: float = 0.005,
     min_tolerance_unstaking: bool = True,
+    allow_partial: bool = False,
+    use_era: bool = False,
     retries: int = 1,
     username: str = Depends(get_current_username)
 ):
@@ -134,9 +178,24 @@ def unstake(
             coldkey_ss58=wallet.coldkeypub.ss58_address,
             hotkey_ss58=dest_hotkey,
             netuid=netuid
-        )
+        ) - bt.Balance.from_rao(1, netuid)
     else:
-        amount = bt.Balance.from_tao(amount / subnet.price.tao, netuid)
+        if amount < 1:
+            amount = subtensor.get_stake(
+                coldkey_ss58=wallet.coldkeypub.ss58_address,
+                hotkey_ss58=dest_hotkey,
+                netuid=netuid
+            ) * amount
+        else:
+            amount = bt.Balance.from_tao(amount , netuid)
+
+    if min_tolerance_unstaking:
+        try:
+            min_tol = get_unstake_min_tolerance(amount.tao, netuid, subtensor)
+            rate_tolerance = min_tol + 0.001
+        except Exception as e:
+            print(f"Error calculating min tolerance: {e}")
+            # Continue with provided rate_tolerance
                     
     while retries > 0:
         try:
@@ -145,8 +204,10 @@ def unstake(
                 wallet=wallet, 
                 amount=amount,
                 hotkey_ss58=dest_hotkey,
-                safe_staking=True,
+                safe_unstaking=True,
                 rate_tolerance=rate_tolerance,
+                allow_partial_stake=allow_partial,
+                period= 1 if use_era else 128,
             )
             if not result:
                 raise Exception("Unstake failed")
@@ -161,5 +222,77 @@ def unstake(
             if retries == 0:
                 return {
                     "success": False,
+                    "error": str(e),
+                    "result": result,
+                }
+
+
+@app.get("/move_stake")
+def move_stake(
+    wallet_name: str,
+    origin_netuid: int,
+    destination_netuid: int,
+    amount: Optional[float] = None,
+    origin_hotkey: str = ROUND_TABLE_HOTKEY,
+    destination_hotkey: str = ROUND_TABLE_HOTKEY,
+    retries: int = 1,
+    use_era: bool = False,
+    username: str = Depends(get_current_username)
+):
+    """Move stake between validators on different subnets"""
+    if retries < 1:
+        retries = 1
+    
+    wallet = wallets.get(wallet_name)
+    if not wallet:
+        return {
+            "success": False,
+            "error": f"Wallet '{wallet_name}' not found"
+        }
+    
+    subtensor = bt.Subtensor(network=NETWORK)
+    
+    # Get current stake amount
+    if amount is None:
+        amount_balance = subtensor.get_stake(
+            coldkey_ss58=wallet.coldkeypub.ss58_address,
+            hotkey_ss58=origin_hotkey,
+            netuid=origin_netuid
+        ) - bt.Balance.from_rao(1, origin_netuid)
+    else:
+        if amount < 1:
+            amount_balance = subtensor.get_stake(
+                coldkey_ss58=wallet.coldkeypub.ss58_address,
+                hotkey_ss58=origin_hotkey,
+                netuid=origin_netuid
+            ) * amount
+        else:
+            amount_balance = bt.Balance.from_tao(amount , origin_netuid)
+    
+    result = None
+    while retries > 0:
+        try:
+            result = subtensor.move_stake(
+                wallet=wallet,
+                origin_hotkey=origin_hotkey,
+                destination_hotkey=destination_hotkey,
+                origin_netuid=origin_netuid,
+                destination_netuid=destination_netuid,
+                amount=amount_balance,
+                period= 1 if use_era else 128,
+            )
+            if not result:
+                raise Exception("Move stake failed")
+            
+            return {
+                "success": True,
+                "result": result,
+            }
+        except Exception as e:
+            retries -= 1
+            if retries == 0:
+                return {
+                    "success": False,
+                    "error": str(e),
                     "result": result,
                 }
