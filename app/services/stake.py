@@ -4,6 +4,12 @@ from typing import Dict, Tuple, Optional, Any
 from app.core.config import settings
 from app.services.proxy import Proxy
 from app.services.wallets import wallets
+from utils.tolerance import (
+    get_stake_min_tolerance,
+    get_unstake_min_tolerance,
+    calculate_stake_rate_tolerance,
+    calculate_unstake_rate_tolerance
+)
 
 
 class StakeService:
@@ -36,22 +42,14 @@ class StakeService:
         Returns:
             float: Minimum tolerance value
         """
-        subnet = self.subtensor.subnet(netuid=netuid)
-        if subnet is None:
-            raise ValueError(f"Subnet with netuid {netuid} does not exist")
-        min_tolerance = tao_amount / subnet.tao_in.tao
-        return min_tolerance
+        return get_stake_min_tolerance(tao_amount, netuid, self.subtensor)
 
 
     def get_unstake_min_tolerance(self, tao_amount: float, netuid: int) -> float:
         """
         Calculate the minimum tolerance for unstaking operations.
         """
-        subnet = self.subtensor.subnet(netuid=netuid)
-        if subnet is None:
-            raise ValueError(f"Subnet with netuid {netuid} does not exist")
-        min_tolerance = tao_amount / (tao_amount + subnet.alpha_in.tao)
-        return min_tolerance
+        return get_unstake_min_tolerance(tao_amount, netuid, self.subtensor)
 
     
     def stake(
@@ -85,18 +83,20 @@ class StakeService:
         """ 
         wallet, delegator = self.wallets[wallet_name]
         
-        # Adjust rate tolerance if using minimum tolerance staking
-        if min_tolerance_staking:
-            # Calculate minimum tolerance
-            subnet = self.subtensor.subnet(netuid=netuid)
-            if subnet is None:
-                return {
-                    "success": False,
-                    "error": f"Subnet with netuid {netuid} does not exist"
-                }
-            min_tolerance = tao_amount / subnet.tao_in.tao
-    
-            rate_tolerance = min_tolerance + 0.001
+        # Calculate rate tolerance
+        try:
+            rate_tolerance = calculate_stake_rate_tolerance(
+                tao_amount=tao_amount,
+                netuid=netuid,
+                min_tolerance_staking=min_tolerance_staking,
+                default_rate_tolerance=rate_tolerance,
+                subtensor=self.subtensor
+            )
+        except ValueError as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
         
         # Execute staking with retry mechanism
         success = False
@@ -185,17 +185,20 @@ class StakeService:
                 "error": "No balance to unstake"
             }
         
-        # Adjust rate tolerance if using minimum tolerance unstaking
-        if min_tolerance_unstaking:
-            subnet = self.subtensor.subnet(netuid=netuid)
-            if subnet is None:
-                return {
-                    "success": False,
-                    "error": f"Subnet with netuid {netuid} does not exist"
-                }
-            # Calculate minimum tolerance for unstaking
-            min_tolerance = amount_balance.tao / (amount_balance.tao + subnet.alpha_in.tao)
-            rate_tolerance = min_tolerance + 0.001
+        # Calculate rate tolerance
+        try:
+            rate_tolerance = calculate_unstake_rate_tolerance(
+                tao_amount=amount_balance.tao,
+                netuid=netuid,
+                min_tolerance_unstaking=min_tolerance_unstaking,
+                default_rate_tolerance=rate_tolerance,
+                subtensor=self.subtensor
+            )
+        except ValueError as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
         
         # Execute unstaking with retry mechanism
         success = False
