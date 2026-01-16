@@ -46,9 +46,9 @@ unlock_wallets()
 @app.get("/")
 def read_root(request: fastapi.Request, username: str = Depends(get_current_username)):
     try:
-        subtensor = bt.Subtensor(network=NETWORK)
         def get_balance_html():
             balance_html = ""
+            subtensor = bt.Subtensor(network=NETWORK)
             for wallet_name in wallet_names:
                 wallet = wallets[wallet_name]
                 balance = subtensor.get_balance(wallet.coldkey.ss58_address)
@@ -115,7 +115,6 @@ def stake(
     result = None
     wallet = wallets[wallet_name]
     subtensor = bt.Subtensor(network=NETWORK)
-
     # Calculate rate tolerance if min_tolerance_staking is True
     if min_tolerance_staking:
         try:
@@ -129,7 +128,7 @@ def stake(
         try:
             result = subtensor.add_stake(
                 netuid=netuid,
-                amount=bt.Balance.from_tao(tao_amount, netuid),
+                amount=bt.Balance.from_tao(tao_amount),
                 wallet=wallet,
                 hotkey_ss58=dest_hotkey,
                 safe_staking=True,
@@ -175,11 +174,13 @@ def unstake(
     subnet = subtensor.subnet(netuid=netuid)
 
     if amount is None:
-        amount = subtensor.get_stake(
+        stake_balance = subtensor.get_stake(
             coldkey_ss58=wallet.coldkeypub.ss58_address,
             hotkey_ss58=dest_hotkey,
             netuid=netuid
-        ) - bt.Balance.from_rao(1, netuid)
+        )
+        # Create Balance in the same currency (alpha for this netuid) by passing netuid
+        amount = bt.Balance.from_rao(stake_balance.rao - 1, netuid)
     else:
         if amount < 1:
             amount = subtensor.get_stake(
@@ -188,7 +189,7 @@ def unstake(
                 netuid=netuid
             ) * amount
         else:
-            amount = bt.Balance.from_tao(amount , netuid)
+            amount = bt.Balance.from_tao(amount)
 
     if min_tolerance_unstaking:
         try:
@@ -252,14 +253,15 @@ def move_stake(
         }
     
     subtensor = bt.Subtensor(network=NETWORK)
-    
     # Get current stake amount
     if amount is None:
-        amount_balance = subtensor.get_stake(
+        stake_balance = subtensor.get_stake(
             coldkey_ss58=wallet.coldkeypub.ss58_address,
             hotkey_ss58=origin_hotkey,
             netuid=origin_netuid
-        ) - bt.Balance.from_rao(1, origin_netuid)
+        )
+        # Create Balance in the same currency (alpha for this netuid) by passing netuid
+        amount_balance = bt.Balance.from_rao(stake_balance.rao - 1, origin_netuid)
     else:
         if amount < 1:
             amount_balance = subtensor.get_stake(
@@ -268,19 +270,19 @@ def move_stake(
                 netuid=origin_netuid
             ) * amount
         else:
-            amount_balance = bt.Balance.from_tao(amount , origin_netuid)
+            amount_balance = bt.Balance.from_tao(amount)
     
     result = None
     while retries > 0:
         try:
             result = subtensor.move_stake(
                 wallet=wallet,
-                origin_hotkey=origin_hotkey,
-                destination_hotkey=destination_hotkey,
                 origin_netuid=origin_netuid,
+                origin_hotkey_ss58=origin_hotkey,
                 destination_netuid=destination_netuid,
+                destination_hotkey_ss58=destination_hotkey,
                 amount=amount_balance,
-                period= 1 if use_era else 128,
+                period=1 if use_era else 128,
             )
             if not result:
                 raise Exception("Move stake failed")
@@ -307,9 +309,8 @@ def stake_list_v3(wallet_name: str):
             content=f"<html><body><h1>Error</h1><p>Wallet '{wallet_name}' not found</p></body></html>",
             status_code=404
         )
-    
-    wallet = wallets[wallet_name]
     subtensor = bt.Subtensor(network=NETWORK)
+    wallet = wallets[wallet_name]
     coldkey_ss58 = wallet.coldkeypub.ss58_address
     stake_list = get_stake_list_v2(subtensor, coldkey_ss58)
     
