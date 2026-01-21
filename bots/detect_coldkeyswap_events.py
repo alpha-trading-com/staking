@@ -21,11 +21,12 @@ staking = Staking()
     
 def stake_when_coldkey_swaps(events):
     SAFE_SUBNETS = {
-        82:200,
-        28:200,
-        69:200,
-        102:200,
-        126:200,
+        21: 100,
+        # 82:200,
+        # 28:200,
+        # 69:200,
+        # 102:200,
+        # 126:200,
     }
 
     ALL_IN_SUBNETS = {
@@ -49,12 +50,12 @@ def stake_when_coldkey_swaps(events):
                 amount = SAFE_SUBNETS[subnet_id]
     
                 #staking.stake_until_success(subnet_id, amount)        
-                #staking.stake(subnet_id, amount)
-                staking.move_stake(
-                    origin_netuid=82,
-                    origin_hotkey="5Gn3dRM5C6KjZ6u46PcjU54cYsmyKRtsM8TQZpcn8s1CNEYm",
-                    destination_netuid=subnet_id,
-                )
+                staking.stake(subnet_id, amount)
+                #staking.move_stake(
+                #     origin_netuid=82,
+                #     origin_hotkey="5Gn3dRM5C6KjZ6u46PcjU54cYsmyKRtsM8TQZpcn8s1CNEYm",
+                #     destination_netuid=subnet_id,
+                # )
 
         except (KeyError, ValueError) as e:
             print(f"Error: {e}")
