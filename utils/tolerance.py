@@ -4,6 +4,9 @@ from app.core.config import settings
 
 
 def get_stake_min_tolerance(tao_amount: float, netuid: int, subtensor: Optional[bt.Subtensor] = None) -> float:
+    return get_stake_min_tolerance_v2(tao_amount, netuid, subtensor)
+
+def get_stake_min_tolerance_v1(tao_amount: float, netuid: int, subtensor: Optional[bt.Subtensor] = None) -> float:
     """
     Calculate the minimum tolerance for staking operations.
     
@@ -28,6 +31,31 @@ def get_stake_min_tolerance(tao_amount: float, netuid: int, subtensor: Optional[
     min_tolerance = tao_amount / subnet.tao_in.tao
     return min_tolerance
 
+
+def get_stake_min_tolerance_v2(tao_amount: float, netuid: int, subtensor: Optional[bt.Subtensor] = None) -> float:
+    if subtensor is None:
+        subtensor = bt.Subtensor(network=settings.NETWORK)
+    subnet = subtensor.subnet(netuid=netuid)
+    sim_swap = subtensor.sim_swap(
+        origin_netuid=0,
+        destination_netuid=netuid,
+        amount=bt.Balance.from_tao(tao_amount)
+    )
+    
+    if subnet is None:
+        raise ValueError(f"Subnet with netuid {netuid} does not exist")
+    
+    deviation = subnet.price.tao - subnet.tao_in.tao / subnet.alpha_in.tao
+
+    tao_amount_after = subnet.tao_in.tao + tao_amount
+    alpha_amount_after = subnet.alpha_in.tao - sim_swap.alpha_amount.tao
+    limit_price = (tao_amount_after / alpha_amount_after) + deviation
+    reference_price = subnet.price.tao
+    if reference_price == 0:
+        raise ValueError("Reference price cannot be zero for tolerance calculation.")
+
+    tolerance = (limit_price / reference_price) - 1
+    return tolerance
 
 def get_unstake_min_tolerance(tao_amount: float, netuid: int, subtensor: Optional[bt.Subtensor] = None) -> float:
     """
