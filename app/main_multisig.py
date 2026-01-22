@@ -114,6 +114,10 @@ def subnets_page(request: fastapi.Request, username: str = Depends(get_current_u
         {"request": request}
     )
 
+@app.get("/settings/tolerance_offset")
+def get_tolerance_offset(username: str = Depends(get_current_username)):
+    return {"tolerance_offset": settings.TOLERANCE_OFFSET}
+
 @app.post("/settings/tolerance_offset")
 def set_tolerance_offset(request: fastapi.Request, username: str = Depends(get_current_username)):
     tolerance_offset = request.query_params.get("tolerance_offset")

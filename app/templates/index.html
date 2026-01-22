@@ -205,7 +205,7 @@
             <button class="tab tab-inactive" id="tab-stake" onclick="showTab('stake')">Stake</button>
             <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
             <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
-            <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Tolerance Calculators</button>
+            <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Settings</button>
             <!-- <a href="/subnets" class="tab tab-inactive" style="padding: 0.35rem 1rem; display: flex; align-items: center; text-decoration: none;">Subnets 🔵</a> -->
             <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" id="useEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
@@ -359,6 +359,18 @@
 
         <div id="tabContent-calc" style="display:none;">
             <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Settings</h2>
+                <div class="input-group">
+                    <label class="input-label">Tolerance Offset</label>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="toleranceOffset" class="input-field flex-1" step="0.000001" placeholder="Enter tolerance offset">
+                        <button onclick="setToleranceOffset()" class="btn">Set Tolerance Offset</button>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1">Set the global tolerance offset value</p>
+                    <div id="toleranceOffsetResult" class="mt-2 text-gray-300"></div>
+                </div>
+            </div>
+            <div class="form-container mb-8">
                 <h2 class="text-xl font-semibold mb-4">Tolerance Calculators</h2>
                 <div class="input-group">
                     <label class="input-label">TAO Or Alpha Amount</label>
@@ -476,6 +488,9 @@
                 calcAmount: document.getElementById('calcAmount')?.value || '',
                 calcNetuid: document.getElementById('calcNetuid')?.value || '',
                 
+                // Settings tab
+                toleranceOffset: document.getElementById('toleranceOffset')?.value || '',
+                
                 // Global settings
                 useEra: document.getElementById('useEra')?.checked !== undefined ? document.getElementById('useEra').checked : true,
                 
@@ -590,6 +605,11 @@
                 }
                 if (inputs.calcNetuid !== undefined && document.getElementById('calcNetuid')) {
                     document.getElementById('calcNetuid').value = inputs.calcNetuid;
+                }
+                
+                // Restore settings tab inputs
+                if (inputs.toleranceOffset !== undefined && document.getElementById('toleranceOffset')) {
+                    document.getElementById('toleranceOffset').value = inputs.toleranceOffset;
                 }
                 
                 // Restore active tab
@@ -803,6 +823,66 @@
             }
         }
 
+        // Fetch current tolerance offset from server
+        async function fetchToleranceOffset() {
+            try {
+                const response = await fetch('/settings/tolerance_offset');
+                const result = await response.json();
+                
+                if (result.tolerance_offset !== undefined) {
+                    const toleranceOffsetInput = document.getElementById('toleranceOffset');
+                    if (toleranceOffsetInput) {
+                        toleranceOffsetInput.value = result.tolerance_offset;
+                        saveInputs(); // Save the fetched value
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching tolerance offset:', error);
+            }
+        }
+
+        // Set tolerance offset
+        async function setToleranceOffset() {
+            const button = document.querySelector('button[onclick="setToleranceOffset()"]');
+            const toleranceOffset = document.getElementById('toleranceOffset').value;
+            const resultDiv = document.getElementById('toleranceOffsetResult');
+
+            if (!toleranceOffset) {
+                alert('Please enter a tolerance offset value');
+                return;
+            }
+
+            // Validate that it's a number
+            if (isNaN(parseFloat(toleranceOffset))) {
+                alert('Tolerance offset must be a valid number');
+                return;
+            }
+
+            try {
+                setButtonLoading(button, true);
+                resultDiv.textContent = '';
+                const response = await fetch(`/settings/tolerance_offset?tolerance_offset=${encodeURIComponent(toleranceOffset)}`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.textContent = `Tolerance offset set successfully to ${toleranceOffset}`;
+                    resultDiv.style.color = '#10b981'; // green color
+                    saveInputs(); // Save the updated value
+                } else {
+                    resultDiv.textContent = `Error: ${result.error || 'Failed to set tolerance offset'}`;
+                    resultDiv.style.color = '#f87171'; // red color
+                }
+            } catch (error) {
+                console.error('Error setting tolerance offset:', error);
+                resultDiv.textContent = `Error: ${error.message}`;
+                resultDiv.style.color = '#f87171'; // red color
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
         // Calculate and set min tolerance for stake form
         async function calculateAndSetMinTolerance() {
             const button = document.querySelector('button[onclick="calculateAndSetMinTolerance()"]');
@@ -877,6 +957,9 @@
             // Restore saved inputs first
             restoreInputs();
             
+            // Fetch current tolerance offset from server
+            fetchToleranceOffset();
+            
             // Set default tab if no tab was restored
             const savedTab = localStorage.getItem('activeTab');
             if (!savedTab) {
@@ -896,7 +979,7 @@
                 'unstakeValidatorHotkey', 'unstakeRetries',
                 'moveWalletName', 'moveAmount', 'originNetuid', 
                 'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
-                'calcAmount', 'calcNetuid', 'useEra'
+                'calcAmount', 'calcNetuid', 'toleranceOffset', 'useEra'
             ];
             
             inputIds.forEach(id => {
