@@ -92,7 +92,9 @@ def calculate_stake_rate_tolerance(
 ) -> float:
     """
     Calculate the rate tolerance for staking operations.
-    If min_tolerance_staking is True, calculates minimum tolerance and adds 0.001.
+    If min_tolerance_staking is True, calculates minimum tolerance.
+    - If TOLERANCE_OFFSET starts with '*', multiplies min_tolerance by that value
+    - Otherwise, adds TOLERANCE_OFFSET to min_tolerance
     Otherwise, returns the default_rate_tolerance.
     
     Args:
@@ -107,7 +109,12 @@ def calculate_stake_rate_tolerance(
     """
     if min_tolerance_staking:
         min_tolerance = get_stake_min_tolerance(tao_amount, netuid, subtensor)
-        return min_tolerance + settings.TOLERANCE_OFFSET
+        # Check if TOLERANCE_OFFSET starts with '*' for multiplication
+        if isinstance(settings.TOLERANCE_OFFSET, str) and settings.TOLERANCE_OFFSET.startswith('*'):
+            multiplier = float(settings.TOLERANCE_OFFSET[1:])
+            return min_tolerance * multiplier
+        else:
+            return min_tolerance + float(settings.TOLERANCE_OFFSET)
     else:
         return default_rate_tolerance
 
@@ -121,7 +128,9 @@ def calculate_unstake_rate_tolerance(
 ) -> float:
     """
     Calculate the rate tolerance for unstaking operations.
-    If min_tolerance_unstaking is True, calculates minimum tolerance and adds 0.001.
+    If min_tolerance_unstaking is True, calculates minimum tolerance.
+    - If TOLERANCE_OFFSET starts with '*', multiplies min_tolerance by that value
+    - Otherwise, adds TOLERANCE_OFFSET to min_tolerance
     Otherwise, returns the default_rate_tolerance.
     
     Args:
@@ -136,7 +145,12 @@ def calculate_unstake_rate_tolerance(
     """
     if min_tolerance_unstaking:
         min_tolerance = get_unstake_min_tolerance(tao_amount, netuid, subtensor)
-        return min_tolerance + settings.TOLERANCE_OFFSET
+        # Check if TOLERANCE_OFFSET starts with '*' for multiplication
+        if isinstance(settings.TOLERANCE_OFFSET, str) and settings.TOLERANCE_OFFSET.startswith('*'):
+            multiplier = float(settings.TOLERANCE_OFFSET[1:])
+            return min_tolerance * multiplier
+        else:
+            return min_tolerance + float(settings.TOLERANCE_OFFSET)
     else:
         return default_rate_tolerance
 

@@ -123,6 +123,15 @@ def set_tolerance_offset(request: fastapi.Request, username: str = Depends(get_c
     tolerance_offset = request.query_params.get("tolerance_offset")
     if tolerance_offset is None:
         return {"error": "Tolerance offset is required"}
-    tolerance_offset = float(tolerance_offset)
-    settings.TOLERANCE_OFFSET = tolerance_offset
+    # Allow both float and string values (e.g., "*1.1" for multiplication)
+    tolerance_offset = tolerance_offset.strip()
+    if tolerance_offset.startswith('*'):
+        # Keep as string for multiplication mode
+        settings.TOLERANCE_OFFSET = tolerance_offset
+    else:
+        # Convert to float for addition mode
+        try:
+            settings.TOLERANCE_OFFSET = float(tolerance_offset)
+        except ValueError:
+            return {"error": "Tolerance offset must be a valid number or multiplication (e.g., '*1.1')"}
     return {"success": True}

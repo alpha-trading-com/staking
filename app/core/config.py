@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel
-from typing import List
+from typing import List, Union
 from dotenv import load_dotenv
 from app.constants import ROUND_TABLE_HOTKEY
 
@@ -27,7 +27,7 @@ class Settings(BaseModel):
     DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
     
     ADMIN_HASH: str = "$2b$12$CqCJKab8CIgqnPU/.eT41.kzdl4d6a3/Vx70R50GAom7Im0tjGemm"
-    TOLERANCE_OFFSET: float = 0.001
+    TOLERANCE_OFFSET: Union[float, str] = 0.001
     
 settings = Settings()
 

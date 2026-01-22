@@ -363,10 +363,13 @@
                 <div class="input-group">
                     <label class="input-label">Tolerance Offset</label>
                     <div class="flex items-center gap-3">
-                        <input type="text" id="toleranceOffset" class="input-field flex-1" step="0.000001" placeholder="Enter tolerance offset">
+                        <input type="text" id="toleranceOffset" class="input-field flex-1" step="0.000001" placeholder="e.g., 0.001 or *1.1">
                         <button onclick="setToleranceOffset()" class="btn">Set Tolerance Offset</button>
                     </div>
-                    <p class="text-sm text-gray-400 mt-1">Set the global tolerance offset value</p>
+                    <p class="text-sm text-gray-400 mt-1">
+                        Set the global tolerance offset value. Use a number (e.g., 0.001) to add to min tolerance, 
+                        or use multiplication format (e.g., *1.1) to multiply min tolerance by that value.
+                    </p>
                     <div id="toleranceOffsetResult" class="mt-2 text-gray-300"></div>
                 </div>
             </div>
@@ -852,10 +855,21 @@
                 return;
             }
 
-            // Validate that it's a number
-            if (isNaN(parseFloat(toleranceOffset))) {
-                alert('Tolerance offset must be a valid number');
-                return;
+            // Validate: either a number or a string starting with '*' followed by a number (e.g., "*1.1")
+            const trimmedValue = toleranceOffset.trim();
+            if (trimmedValue.startsWith('*')) {
+                // For multiplication mode, validate the part after '*'
+                const multiplier = trimmedValue.substring(1);
+                if (isNaN(parseFloat(multiplier))) {
+                    alert('Tolerance offset must be a valid number or multiplication (e.g., "*1.1")');
+                    return;
+                }
+            } else {
+                // For addition mode, validate it's a number
+                if (isNaN(parseFloat(toleranceOffset))) {
+                    alert('Tolerance offset must be a valid number or multiplication (e.g., "*1.1")');
+                    return;
+                }
             }
 
             try {
