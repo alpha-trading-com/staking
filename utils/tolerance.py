@@ -107,7 +107,7 @@ def calculate_stake_rate_tolerance(
     """
     if min_tolerance_staking:
         min_tolerance = get_stake_min_tolerance(tao_amount, netuid, subtensor)
-        return min_tolerance + 0.001
+        return min_tolerance + settings.TOLERANCE_OFFSET
     else:
         return default_rate_tolerance
 
@@ -136,7 +136,7 @@ def calculate_unstake_rate_tolerance(
     """
     if min_tolerance_unstaking:
         min_tolerance = get_unstake_min_tolerance(tao_amount, netuid, subtensor)
-        return min_tolerance + 0.001
+        return min_tolerance + settings.TOLERANCE_OFFSET
     else:
         return default_rate_tolerance
 

@@ -27,7 +27,8 @@ class Settings(BaseModel):
     DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
     
     ADMIN_HASH: str = "$2b$12$CqCJKab8CIgqnPU/.eT41.kzdl4d6a3/Vx70R50GAom7Im0tjGemm"
-
+    TOLERANCE_OFFSET: float = 0.001
+    
 settings = Settings()
 
 print(f"USE_ERA: {settings.USE_ERA}")
