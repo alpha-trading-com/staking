@@ -359,6 +359,21 @@
 
         <div id="tabContent-calc" style="display:none;">
             <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">App Usage Information</h2>
+                <div class="input-group">
+                    <p class="text-gray-300" style="line-height: 1.6; white-space: pre-wrap;">
+                        Welcome to use this app to stake, unstake, move stake, and calculate tolerance.
+                        If your tolerance is bigger than 0.89, it will be ignored for staking and unstaking.
+                        When unstaking, I recommend you to ignore the tolerance so you can set this value to 0.9.
+                        When staking, you can set the tolerance by calculate the min tolerance and adding some offset to the min tolerance. If you check the "Use Min Tolerance" checkbox, the app will calculate the min tolerance for you and add the offset to the min tolerance.
+                        You can set tolerance offset value to add to the min tolerance or multiply the min tolerance by that value in the settings.
+                        In my experience, the tolerance_offset value "*1.1" is a good value.
+                        when restarting the app, the tolerance offset value will be reset to the default value.
+                        Thank you for using this app!
+                    </p>
+                </div>
+            </div>
+            <div class="form-container mb-8">
                 <h2 class="text-xl font-semibold mb-4">Settings</h2>
                 <div class="input-group">
                     <label class="input-label">Tolerance Offset</label>
