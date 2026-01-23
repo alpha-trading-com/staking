@@ -2,6 +2,8 @@ import bittensor as bt
 from typing import Optional
 from app.core.config import settings
 
+from utils.sim_swap import sim_swap, TAO_TO_RAO
+
 
 def get_stake_min_tolerance(tao_amount: float, netuid: int, subtensor: Optional[bt.Subtensor] = None) -> float:
     return get_stake_min_tolerance_v2(tao_amount, netuid, subtensor)
@@ -36,19 +38,15 @@ def get_stake_min_tolerance_v2(tao_amount: float, netuid: int, subtensor: Option
     if subtensor is None:
         subtensor = bt.Subtensor(network=settings.NETWORK)
     subnet = subtensor.subnet(netuid=netuid)
-    sim_swap = subtensor.sim_swap(
-        origin_netuid=0,
-        destination_netuid=netuid,
-        amount=bt.Balance.from_tao(tao_amount)
-    )
+    sim_swap_result = sim_swap(subtensor, 0, netuid, tao_amount)
     
     if subnet is None:
         raise ValueError(f"Subnet with netuid {netuid} does not exist")
     
     deviation = subnet.price.tao - subnet.tao_in.tao / subnet.alpha_in.tao
 
-    tao_amount_after = subnet.tao_in.tao + tao_amount
-    alpha_amount_after = subnet.alpha_in.tao - sim_swap.alpha_amount.tao
+    tao_amount_after = subnet.tao_in.tao + tao_amount - sim_swap_result["tao_fee"] / TAO_TO_RAO
+    alpha_amount_after = subnet.alpha_in.tao - sim_swap_result["alpha_amount"] / TAO_TO_RAO
     limit_price = (tao_amount_after / alpha_amount_after) + deviation
     reference_price = subnet.price.tao
     if reference_price == 0:

@@ -5,6 +5,8 @@ from rich.console import Console
 from rich.table import Table
 from io import StringIO
 
+from utils.sim_swap import sim_swap, TAO_TO_RAO
+
 
 def get_amount_with_sim_swap(subtensor, alpha_stake_amount, netuid):
     """
@@ -24,13 +26,9 @@ def get_amount_with_sim_swap(subtensor, alpha_stake_amount, netuid):
     
     try:
         # Simulate unstaking: swap from subnet (origin) to root network (destination)
-        sim_result = subtensor.sim_swap(
-            origin_netuid=netuid,
-            destination_netuid=0,  # 0 is root network (TAO)
-            amount=alpha_stake_amount
-        )
+        sim_result = sim_swap(subtensor, netuid, 0, alpha_stake_amount.tao)
         # Return the TAO amount you'd receive (after fees)
-        return sim_result.tao_amount.tao
+        return sim_result["tao_amount"] / TAO_TO_RAO
     except Exception as e:
         print(f"Warning: sim_swap failed for netuid {netuid}: {e}")
         # Fallback to manual calculation if sim_swap fails
