@@ -1,4 +1,6 @@
 import bittensor as bt
+from bittensor import Balance
+
 from typing import Optional
 from app.core.config import settings
 
@@ -81,13 +83,13 @@ def get_unstake_min_tolerance(tao_amount: float, netuid: int, subtensor: Optiona
     return min_tolerance
 
 
-def calculate_stake_rate_tolerance(
+def calculate_stake_limit_price(
     tao_amount: float,
     netuid: int,
     min_tolerance_staking: bool,
     default_rate_tolerance: float,
     subtensor: Optional[bt.Subtensor] = None
-) -> float:
+) -> int:
     """
     Calculate the rate tolerance for staking operations.
     If min_tolerance_staking is True, calculates minimum tolerance.
@@ -103,27 +105,54 @@ def calculate_stake_rate_tolerance(
         subtensor: Optional Subtensor instance. If not provided, creates one using settings.NETWORK
         
     Returns:
-        float: Rate tolerance value
+        int: Limit price value
     """
+    if netuid == 0:
+        return TAO_TO_RAO + 1
+
+    if not min_tolerance_staking:
+        if default_rate_tolerance > 0.89:
+            return TAO_TO_RAO + 1
+
+    if subtensor is None:
+        subtensor = bt.Subtensor(network=settings.NETWORK)
+    
+    subnet = subtensor.subnet(netuid=netuid)
+
+    tolerance = default_rate_tolerance
     if min_tolerance_staking:
-        min_tolerance = get_stake_min_tolerance(tao_amount, netuid, subtensor)
-        # Check if TOLERANCE_OFFSET starts with '*' for multiplication
+        deviation = subnet.price.tao - subnet.tao_in.tao / subnet.alpha_in.tao      
+        sim_swap_result = sim_swap(subtensor, 0, netuid, tao_amount)
+
+        tao_amount_after = subnet.tao_in.tao + tao_amount - sim_swap_result["tao_fee"] / TAO_TO_RAO
+        alpha_amount_after = subnet.alpha_in.tao - sim_swap_result["alpha_amount"] / TAO_TO_RAO
+        limit_price = (tao_amount_after / alpha_amount_after) + deviation
+        reference_price = subnet.price.tao
+
+        min_tolerance = (limit_price / reference_price) - 1
         if isinstance(settings.TOLERANCE_OFFSET, str) and settings.TOLERANCE_OFFSET.startswith('*'):
             multiplier = float(settings.TOLERANCE_OFFSET[1:])
-            return min_tolerance * multiplier
+            tolerance = min_tolerance * multiplier
         else:
-            return min_tolerance + float(settings.TOLERANCE_OFFSET)
-    else:
-        return default_rate_tolerance
+            tolerance = min_tolerance + float(settings.TOLERANCE_OFFSET)
+  
+    rate = 1 / subnet.price.tao or 1
+    _rate_with_tolerance = rate * (
+        1 + tolerance
+    )  # Rate only for display
+    price_with_tolerance = subnet.price.rao * (
+        1 + tolerance
+    )
+    return price_with_tolerance
+ 
 
-
-def calculate_unstake_rate_tolerance(
+def calculate_unstake_limit_price(
     tao_amount: float,
     netuid: int,
     min_tolerance_unstaking: bool,
     default_rate_tolerance: float,
     subtensor: Optional[bt.Subtensor] = None
-) -> float:
+) -> int:
     """
     Calculate the rate tolerance for unstaking operations.
     If min_tolerance_unstaking is True, calculates minimum tolerance.
@@ -139,16 +168,31 @@ def calculate_unstake_rate_tolerance(
         subtensor: Optional Subtensor instance. If not provided, creates one using settings.NETWORK
         
     Returns:
-        float: Rate tolerance value
+        int: Limit price value
     """
+
+    if netuid == 0:
+        return 1
+
+    if not min_tolerance_unstaking:
+        if default_rate_tolerance > 0.89:
+            return 1
+        
+    tolerance = default_rate_tolerance
     if min_tolerance_unstaking:
         min_tolerance = get_unstake_min_tolerance(tao_amount, netuid, subtensor)
-        # Check if TOLERANCE_OFFSET starts with '*' for multiplication
         if isinstance(settings.TOLERANCE_OFFSET, str) and settings.TOLERANCE_OFFSET.startswith('*'):
             multiplier = float(settings.TOLERANCE_OFFSET[1:])
-            return min_tolerance * multiplier
+            tolerance = min_tolerance * multiplier
         else:
-            return min_tolerance + float(settings.TOLERANCE_OFFSET)
-    else:
-        return default_rate_tolerance
+            tolerance = min_tolerance + float(settings.TOLERANCE_OFFSET)
 
+    subnet = subtensor.subnet(netuid=netuid)
+    rate = 1 / subnet.price.tao or 1
+    _rate_with_tolerance = rate * (
+        1 - tolerance
+    )
+    price_with_tolerance = subnet.price.rao * (
+        1 - tolerance
+    )
+    return price_with_tolerance

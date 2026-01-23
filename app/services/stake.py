@@ -7,8 +7,8 @@ from app.services.wallets import wallets
 from utils.tolerance import (
     get_stake_min_tolerance,
     get_unstake_min_tolerance,
-    calculate_stake_rate_tolerance,
-    calculate_unstake_rate_tolerance
+    calculate_stake_limit_price,
+    calculate_unstake_limit_price
 )
 
 
@@ -85,7 +85,7 @@ class StakeService:
         
         # Calculate rate tolerance
         try:
-            rate_tolerance = calculate_stake_rate_tolerance(
+            price_with_tolerance = calculate_stake_limit_price(
                 tao_amount=tao_amount,
                 netuid=netuid,
                 min_tolerance_staking=min_tolerance_staking,
@@ -110,7 +110,7 @@ class StakeService:
                     delegator=delegator,
                     netuid=netuid,
                     hotkey=dest_hotkey,
-                    tolerance=rate_tolerance,
+                    price_with_tolerance=price_with_tolerance,
                     allow_partial=allow_partial,
                     use_era=use_era,
                 )
@@ -187,7 +187,7 @@ class StakeService:
         
         # Calculate rate tolerance
         try:
-            rate_tolerance = calculate_unstake_rate_tolerance(
+            price_with_tolerance = calculate_unstake_limit_price(
                 tao_amount=amount_balance.tao,
                 netuid=netuid,
                 min_tolerance_unstaking=min_tolerance_unstaking,
@@ -212,7 +212,7 @@ class StakeService:
                     delegator=delegator,
                     amount=amount_balance,
                     hotkey=dest_hotkey,
-                    tolerance=rate_tolerance,
+                    price_with_tolerance=price_with_tolerance,
                     allow_partial=allow_partial,
                     use_era=use_era,
                 )

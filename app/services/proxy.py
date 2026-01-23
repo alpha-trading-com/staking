@@ -1,4 +1,5 @@
 import bittensor as bt
+from pydantic_core.core_schema import int_schema
 from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import SubstrateRequestException
 from typing import Optional, cast
@@ -33,7 +34,7 @@ class Proxy:
         netuid: int, 
         hotkey: str, 
         amount: Balance, 
-        tolerance: float = 0.005,
+        price_with_tolerance: int,
         allow_partial: bool = False,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
@@ -49,22 +50,6 @@ class Proxy:
             allow_partial: Whether to allow partial staking
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
-        subnet_info = self.subtensor.subnet(netuid)
-        if not subnet_info:
-            return False, f"Subnet with netuid {netuid} does not exist"
-        
-        if subnet_info.is_dynamic:
-            rate = 1 / subnet_info.price.tao or 1
-            _rate_with_tolerance = rate * (
-                1 + tolerance
-            )  # Rate only for display
-            price_with_tolerance = subnet_info.price.rao * (
-                1 + tolerance
-            )
-        else:
-            price_with_tolerance = Balance.from_tao(1)
-
-        print(f"price_with_tolerance: {price_with_tolerance}")
         self.init_runtime()
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
@@ -92,7 +77,7 @@ class Proxy:
         netuid: int,
         hotkey: str,
         amount: Balance,
-        tolerance: float = 0.005,
+        price_with_tolerance: int,
         allow_partial: bool = False,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
@@ -104,26 +89,10 @@ class Proxy:
             netuid: Network/subnet ID
             hotkey: Hotkey address
             amount: Amount to unstake (if not using --all)
-            tolerance: Tolerance for unstake amount
+            price_with_tolerance: Price with tolerance
             allow_partial: Whether to allow partial unstaking
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
-        subnet_info = self.subtensor.subnet(netuid)
-        if not subnet_info:
-            return False, f"Subnet with netuid {netuid} does not exist"
-        
-        if subnet_info.is_dynamic:
-            rate = subnet_info.price.tao or 1
-            rate_with_tolerance = rate * (
-                1 - tolerance
-            )  # Rate only for display
-            price_with_tolerance = subnet_info.price.rao * (
-                1 - tolerance
-            )  # Actual price to pass to extrinsic
-        else:
-            rate_with_tolerance = 1
-            price_with_tolerance = 1
-        print(f"amount: {amount.rao}")
         self.init_runtime()
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
