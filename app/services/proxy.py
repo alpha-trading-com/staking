@@ -49,10 +49,6 @@ class Proxy:
             allow_partial: Whether to allow partial staking
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
-        free_balance = self.subtensor.get_balance(
-            address=delegator,
-        )
-        print(f"free_balance: {free_balance}")
         subnet_info = self.subtensor.subnet(netuid)
         if not subnet_info:
             return False, f"Subnet with netuid {netuid} does not exist"
@@ -82,10 +78,8 @@ class Proxy:
             }
         )
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
-        new_free_balance = self.subtensor.get_balance(
-            address=delegator,
-        )
-        if new_free_balance.rao < free_balance.rao:
+        
+        if is_success:
             return True, f"Stake added successfully"
         else:
             return False, f"Error: {error_message}"
@@ -142,15 +136,8 @@ class Proxy:
                 "allow_partial": allow_partial,
             }
         )
-        free_balance = self.subtensor.get_balance(
-            address=delegator,
-        )
-        
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
-        new_free_balance = self.subtensor.get_balance(
-            address=delegator,
-        )
-        if new_free_balance.rao > free_balance.rao:
+        if is_success:
             return True, f"Stake removed successfully"
         else:
             return False, f"Error: {error_message}"
