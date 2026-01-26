@@ -28,6 +28,7 @@ def stake_when_coldkey_swaps(events):
         126: 100,
         99: 100,
         58: 100,
+        118: 100,
     }
 
     ALL_IN_SUBNETS = {
