@@ -62,5 +62,5 @@ def stake_when_coldkey_swaps(events):
             continue
 
 if __name__ == "__main__":
-    staking.stake(22, 10)
-    #fetcher.run(stake_when_coldkey_swaps)
+    #staking.stake(22, 10)
+    fetcher.run(stake_when_coldkey_swaps)
