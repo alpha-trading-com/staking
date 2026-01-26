@@ -3,12 +3,13 @@ import time
 
 from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
-from app.services.fast_proxy import FastProxy
+from app.services.proxy import Proxy
 from utils.logger import logger
+from utils.tolerance import calculate_stake_limit_price
 
 class Staking:
     def __init__(self):
-        self.proxy = FastProxy(network=settings.NETWORK)
+        self.proxy = Proxy(network=settings.NETWORK)
         self.proxy.init_runtime()
         self.subtensor = bt.Subtensor(network=settings.NETWORK)
         self.wallet_name = settings.WALLET_NAMES[0]
@@ -30,8 +31,16 @@ class Staking:
     def is_staked(self, netuid):
         return self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao > 0
 
-    def stake(self, netuid, amount, retries=3):
+    def stake(self, netuid, amount, retries=1):
         print(f"Staking {amount} TAO to netuid {netuid}")
+        limit_price = calculate_stake_limit_price(
+            amount, 
+            netuid, 
+            min_tolerance_staking=True, 
+            default_rate_tolerance=0.035,
+            subtensor=self.subtensor,
+            tolerance_offset="*1.2"
+        )
         for _ in range(retries):
             result, msg = self.proxy.add_stake(
                 proxy_wallet=self.wallet,
@@ -39,7 +48,7 @@ class Staking:
                 netuid=netuid,
                 hotkey=settings.DEFAULT_DEST_HOTKEY,
                 amount=bt.Balance.from_tao(amount),
-                tolerance=0.035,
+                price_with_tolerance=limit_price,
             )
             if result:
                 print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")

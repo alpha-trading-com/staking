@@ -1,10 +1,10 @@
 import bittensor as bt
 from bittensor import Balance
 
-from typing import Optional
 from app.core.config import settings
-
+from typing import Union, Optional
 from utils.sim_swap import sim_swap, TAO_TO_RAO
+
 
 
 def get_stake_min_tolerance(tao_amount: float, netuid: int, subtensor: Optional[bt.Subtensor] = None) -> float:
@@ -88,7 +88,8 @@ def calculate_stake_limit_price(
     netuid: int,
     min_tolerance_staking: bool,
     default_rate_tolerance: float,
-    subtensor: Optional[bt.Subtensor] = None
+    subtensor: Optional[bt.Subtensor] = None,
+    tolerance_offset: Union[float, str] = settings.TOLERANCE_OFFSET
 ) -> int:
     """
     Calculate the rate tolerance for staking operations.
@@ -130,11 +131,11 @@ def calculate_stake_limit_price(
         reference_price = subnet.price.tao
 
         min_tolerance = (limit_price / reference_price) - 1
-        if isinstance(settings.TOLERANCE_OFFSET, str) and settings.TOLERANCE_OFFSET.startswith('*'):
-            multiplier = float(settings.TOLERANCE_OFFSET[1:])
+        if isinstance(tolerance_offset, str) and tolerance_offset.startswith('*'):
+            multiplier = float(tolerance_offset[1:])
             tolerance = min_tolerance * multiplier
         else:
-            tolerance = min_tolerance + float(settings.TOLERANCE_OFFSET)
+            tolerance = min_tolerance + float(tolerance_offset)
   
     rate = 1 / subnet.price.tao or 1
     _rate_with_tolerance = rate * (
@@ -151,7 +152,8 @@ def calculate_unstake_limit_price(
     netuid: int,
     min_tolerance_unstaking: bool,
     default_rate_tolerance: float,
-    subtensor: Optional[bt.Subtensor] = None
+    subtensor: Optional[bt.Subtensor] = None,
+    tolerance_offset: Union[float, str]  = settings.TOLERANCE_OFFSET
 ) -> int:
     """
     Calculate the rate tolerance for unstaking operations.
@@ -166,7 +168,7 @@ def calculate_unstake_limit_price(
         min_tolerance_unstaking: Whether to use minimum tolerance
         default_rate_tolerance: Default tolerance value to use if not using min tolerance
         subtensor: Optional Subtensor instance. If not provided, creates one using settings.NETWORK
-        
+        tolerance_offset: Tolerance offset to use for unstaking operations 
     Returns:
         int: Limit price value
     """
@@ -181,11 +183,11 @@ def calculate_unstake_limit_price(
     tolerance = default_rate_tolerance
     if min_tolerance_unstaking:
         min_tolerance = get_unstake_min_tolerance(tao_amount, netuid, subtensor)
-        if isinstance(settings.TOLERANCE_OFFSET, str) and settings.TOLERANCE_OFFSET.startswith('*'):
-            multiplier = float(settings.TOLERANCE_OFFSET[1:])
+        if isinstance(tolerance_offset, str) and tolerance_offset.startswith('*'):
+            multiplier = float(tolerance_offset[1:])
             tolerance = min_tolerance * multiplier
         else:
-            tolerance = min_tolerance + float(settings.TOLERANCE_OFFSET)
+            tolerance = min_tolerance + float(tolerance_offset)
 
     subnet = subtensor.subnet(netuid=netuid)
     rate = 1 / subnet.price.tao or 1
