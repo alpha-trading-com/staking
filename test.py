@@ -37,7 +37,7 @@ def print_all_owner_wallets_stake_info(sell_tao_amount):
             "tao_amount": tao_amount
         })
 
-    subnets.sort(key=lambda x: abs(x["tao_amount"] - sell_tao_amount), reverse=True)
+    subnets.sort(key=lambda x: abs(x["tao_amount"] - sell_tao_amount), reverse=False)
     return subnets
 if __name__ == '__main__':
     subnets = print_all_owner_wallets_stake_info(sell_tao_amount=1750)
