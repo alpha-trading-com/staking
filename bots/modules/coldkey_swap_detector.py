@@ -107,7 +107,7 @@ class ColdkeySwapFetcher:
             current_block = self.subtensor.get_current_block()
             print(f"Current block: {current_block}")
             if current_block < self.last_checked_block:
-                time.sleep(2)
+                #time.sleep(0.5)
                 continue
 
             print(f"Fetching coldkey swaps for block {self.last_checked_block}")
