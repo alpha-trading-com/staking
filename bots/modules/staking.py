@@ -33,6 +33,8 @@ class Staking:
 
     def stake(self, netuid, amount, retries=1):
         print(f"Staking {amount} TAO to netuid {netuid}")
+        amount = min(amount, self.subtensor.get_balance(self.delegator).tao)
+        print(f"Amount: {amount}")
         limit_price = calculate_stake_limit_price(
             amount, 
             netuid, 

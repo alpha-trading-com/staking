@@ -22,11 +22,11 @@ staking = Staking()
 def stake_when_coldkey_swaps(events):
     SAFE_SUBNETS = {
         21: 100,
-        # 82:200,
-        # 28:200,
-        # 69:200,
-        # 102:200,
-        # 126:200,
+        101:100,
+        40: 100,
+        28: 100,
+        126: 100,
+        99: 100,
     }
 
     ALL_IN_SUBNETS = {
