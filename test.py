@@ -32,6 +32,8 @@ def print_all_owner_wallets_stake_info(sell_tao_amount):
                 stake_amount += info.stake.tao
         sim_swap_result = sim_swap(subtensor, i, 0, stake_amount)
         tao_amount = sim_swap_result["tao_amount"] / TAO_TO_RAO
+        if tao_amount > sell_tao_amount:
+            continue
         subnets.append({
             "netuid": i,
             "tao_amount": tao_amount
