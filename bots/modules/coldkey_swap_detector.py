@@ -66,10 +66,10 @@ class ColdkeySwapFetcher:
                 
                 # Get the new coldkey from call_args
                 address = ex.value.get('address', None)
-                subnet_id = owner_coldkeys.index(address)
                 # To get the old identity, use the current subnet identity from subnet_infos[subnet_id].
                 # To get the new identity, get from call_args['subnet_name'].
                 try:
+                    subnet_id = owner_coldkeys.index(address)
                     old_identity = subnet_infos[subnet_id].subnet_name
                     call_args = call.get('call_args', [])
                     new_identity = next((a['value'] for a in call_args if a['name'] == 'subnet_name'), None)

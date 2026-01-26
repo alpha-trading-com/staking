@@ -31,6 +31,7 @@ def stake_when_coldkey_swaps(events):
         32: 100,
         88: 100,
         118: 100,
+        42: 100,
         79: 100,
         43: 100,
     }
