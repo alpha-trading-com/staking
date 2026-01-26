@@ -49,6 +49,7 @@ class Staking:
                 hotkey=settings.DEFAULT_DEST_HOTKEY,
                 amount=bt.Balance.from_tao(amount),
                 price_with_tolerance=limit_price,
+                use_era=True,
             )
             if result:
                 print(f"Stake added: {self.wallet.coldkey.ss58_address} {amount} {netuid}")
