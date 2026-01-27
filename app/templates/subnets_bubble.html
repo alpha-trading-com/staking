@@ -203,6 +203,132 @@
             color: #9ca3af;
             margin-top: 0.25rem;
         }
+        
+        .bubble.hidden {
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        
+        .bubble-group.hidden {
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        
+        .filter-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 10;
+            background: rgba(35, 42, 54, 0.95);
+            border: 1px solid #60a5fa;
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 250px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .filter-controls h3 {
+            color: #60a5fa;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem 0;
+        }
+        
+        .filter-input {
+            width: 100%;
+            background: #181c24;
+            color: #e5e7eb;
+            border: 1px solid #60a5fa;
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            box-sizing: border-box;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .filter-btn {
+            flex: 1;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .filter-btn:hover {
+            background: #3b82f6;
+        }
+        
+        .filter-btn.secondary {
+            background: #475569;
+        }
+        
+        .filter-btn.secondary:hover {
+            background: #64748b;
+        }
+        
+        .hidden-list {
+            margin-top: 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .hidden-list-title {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .hidden-item {
+            background: #181c24;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin-bottom: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hidden-item:hover {
+            background: #232a36;
+            border-color: #60a5fa;
+        }
+        
+        .hidden-item-name {
+            color: #e5e7eb;
+            font-weight: 500;
+        }
+        
+        .hidden-item-netuid {
+            color: #9ca3af;
+        }
+        
+        .bubble-count {
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -236,6 +362,9 @@
                     <span style="color: #cbd5e1;">-</span>
                     <input type="number" id="size-max" min="10" max="200" value="90" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem; font-size: 0.9rem; width: 60px; text-align: center;">
                 </div>
+                <div style="display: flex; align-items: center;">
+                    <button id="filter-toggle-btn" class="back-btn" style="margin:0;">Filter Subnets</button>
+                </div>
             </div>
         </div>
         
@@ -253,6 +382,20 @@
                 <div class="stat-label">Highest Price</div>
             </div>
         </div> -->
+        
+        <div class="filter-controls" id="filter-controls" style="display: none;">
+            <h3>Filter Subnets</h3>
+            <input type="text" id="subnet-search" class="filter-input" placeholder="Search by name or netuid...">
+            <div class="filter-buttons">
+                <button class="filter-btn" id="show-all-btn">Show All</button>
+                <button class="filter-btn secondary" id="hide-all-btn">Hide All</button>
+            </div>
+            <div class="bubble-count" id="bubble-count">Visible: 0 / Total: 0</div>
+            <div class="hidden-list" id="hidden-list" style="display: none;">
+                <div class="hidden-list-title">Hidden Subnets (click to show):</div>
+                <div id="hidden-items"></div>
+            </div>
+        </div>
         
         <div id="chart-container">
             <div class="loading" id="loading">Loading subnet data...</div>
@@ -278,6 +421,8 @@
     
     <script>
         let currentData = null;
+        let hiddenSubnets = new Set(); // Track hidden subnet netuids
+        let allNodes = []; // Store all nodes for physics updates
         
         // Fetch subnet data and render visualization
         async function loadSubnetData() {
@@ -324,9 +469,69 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadSubnetData();
             
+            // Filter controls toggle
+            const filterToggleBtn = document.getElementById('filter-toggle-btn');
+            const filterControls = document.getElementById('filter-controls');
+            filterToggleBtn.addEventListener('click', () => {
+                const isVisible = filterControls.style.display !== 'none';
+                filterControls.style.display = isVisible ? 'none' : 'block';
+                filterToggleBtn.textContent = isVisible ? 'Filter Subnets' : 'Hide Filters';
+            });
+            
+            // Search functionality
+            const subnetSearch = document.getElementById('subnet-search');
+            subnetSearch.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                if (!searchTerm) {
+                    // Show all if search is empty
+                    hiddenSubnets.clear();
+                    updateBubbleVisibility();
+                    updateHiddenList();
+                    return;
+                }
+                
+                // Hide all subnets that don't match
+                if (currentData) {
+                    currentData.forEach(subnet => {
+                        const matches = subnet.name.toLowerCase().includes(searchTerm) || 
+                                      subnet.netuid.toString().includes(searchTerm);
+                        if (matches) {
+                            hiddenSubnets.delete(subnet.netuid);
+                        } else {
+                            hiddenSubnets.add(subnet.netuid);
+                        }
+                    });
+                    updateBubbleVisibility();
+                    updateHiddenList();
+                }
+            });
+            
+            // Show all button
+            document.getElementById('show-all-btn').addEventListener('click', () => {
+                hiddenSubnets.clear();
+                subnetSearch.value = '';
+                updateBubbleVisibility();
+                updateHiddenList();
+            });
+            
+            // Hide all button
+            document.getElementById('hide-all-btn').addEventListener('click', () => {
+                if (currentData) {
+                    currentData.forEach(subnet => {
+                        if (subnet.price <= 0.8) {
+                            hiddenSubnets.add(subnet.netuid);
+                        }
+                    });
+                    updateBubbleVisibility();
+                    updateHiddenList();
+                }
+            });
+            
             document.getElementById('period-select').addEventListener('change', () => {
                 const container = document.getElementById('chart-container');
                 container.innerHTML = '<div class="loading" id="loading">Loading data for selected period...</div>';
+                hiddenSubnets.clear(); // Reset hidden subnets when period changes
+                subnetSearch.value = '';
                 loadSubnetData();
             });
             
@@ -368,6 +573,68 @@
             sizeMaxInput.addEventListener('input', updateBubbleSizes);
             sizeMaxInput.addEventListener('change', updateBubbleSizes);
         });
+        
+        // Update bubble visibility based on hiddenSubnets set
+        function updateBubbleVisibility() {
+            allNodes.forEach(node => {
+                const isHidden = hiddenSubnets.has(node.netuid);
+                const group = d3.select(node.element);
+                if (group.empty()) return;
+                
+                if (isHidden) {
+                    group.classed('hidden', true);
+                    group.style('pointer-events', 'none');
+                } else {
+                    group.classed('hidden', false);
+                    group.style('pointer-events', 'all');
+                }
+            });
+            updateBubbleCount();
+        }
+        
+        // Update bubble count display
+        function updateBubbleCount() {
+            if (!currentData) return;
+            const validSubnets = currentData.filter(s => s.price <= 0.8);
+            const visibleCount = validSubnets.filter(s => !hiddenSubnets.has(s.netuid)).length;
+            const totalCount = validSubnets.length;
+            document.getElementById('bubble-count').textContent = `Visible: ${visibleCount} / Total: ${totalCount}`;
+        }
+        
+        // Update hidden subnets list
+        function updateHiddenList() {
+            const hiddenList = document.getElementById('hidden-list');
+            const hiddenItems = document.getElementById('hidden-items');
+            
+            if (hiddenSubnets.size === 0) {
+                hiddenList.style.display = 'none';
+                return;
+            }
+            
+            hiddenList.style.display = 'block';
+            hiddenItems.innerHTML = '';
+            
+            if (!currentData) return;
+            
+            const hiddenSubnetsList = currentData
+                .filter(s => hiddenSubnets.has(s.netuid) && s.price <= 0.8)
+                .sort((a, b) => a.netuid - b.netuid);
+            
+            hiddenSubnetsList.forEach(subnet => {
+                const item = document.createElement('div');
+                item.className = 'hidden-item';
+                item.innerHTML = `
+                    <span class="hidden-item-name">${subnet.name}</span>
+                    <span class="hidden-item-netuid">#${subnet.netuid}</span>
+                `;
+                item.addEventListener('click', () => {
+                    hiddenSubnets.delete(subnet.netuid);
+                    updateBubbleVisibility();
+                    updateHiddenList();
+                });
+                hiddenItems.appendChild(item);
+            });
+        }
         
         function showError(message) {
             const loadingEl = document.getElementById('loading');
@@ -493,6 +760,17 @@
                         window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
                     }
                     hasDragged = false; // Reset for next interaction
+                })
+                .on('contextmenu', function(event, d) {
+                    event.preventDefault(); // Prevent default context menu
+                    // Toggle hide/show on right-click
+                    if (hiddenSubnets.has(d.netuid)) {
+                        hiddenSubnets.delete(d.netuid);
+                    } else {
+                        hiddenSubnets.add(d.netuid);
+                    }
+                    updateBubbleVisibility();
+                    updateHiddenList();
                 });
             
             // Add text labels (show netuid, price, and percentage)
@@ -559,6 +837,22 @@
                 d.element = this;
             });
             
+            // Store all nodes for visibility updates
+            allNodes = nodes;
+            
+            // Apply initial visibility state
+            nodes.forEach(node => {
+                if (hiddenSubnets.has(node.netuid)) {
+                    const group = d3.select(node.element);
+                    group.classed('hidden', true);
+                    group.style('pointer-events', 'none');
+                }
+            });
+            
+            // Update counts and lists
+            updateBubbleCount();
+            updateHiddenList();
+            
             // Track drag distance to distinguish from clicks
             let dragStartPos = null;
             let hasDragged = false;
@@ -600,9 +894,9 @@
             
             // Collision detection and physics update
             function updatePhysics() {
-                // Update positions (skip nodes being dragged)
+                // Update positions (skip nodes being dragged or hidden)
                 nodes.forEach(node => {
-                    if (node.isDragging) return; // Skip physics for dragged nodes
+                    if (node.isDragging || hiddenSubnets.has(node.netuid)) return; // Skip physics for dragged or hidden nodes
                     node.x += node.vx;
                     node.y += node.vy;
                     
@@ -628,14 +922,15 @@
                     }
                 });
                 
-                // Check collisions between bubbles (skip dragged nodes)
+                // Check collisions between bubbles (skip dragged or hidden nodes)
                 for (let i = 0; i < nodes.length; i++) {
                     for (let j = i + 1; j < nodes.length; j++) {
                         const node1 = nodes[i];
                         const node2 = nodes[j];
                         
-                        // Skip collision if either node is being dragged
-                        if (node1.isDragging || node2.isDragging) continue;
+                        // Skip collision if either node is being dragged or hidden
+                        if (node1.isDragging || node2.isDragging || 
+                            hiddenSubnets.has(node1.netuid) || hiddenSubnets.has(node2.netuid)) continue;
                         
                         const dx = node2.x - node1.x;
                         const dy = node2.y - node1.y;
