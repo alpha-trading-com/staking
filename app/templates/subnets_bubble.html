@@ -43,8 +43,10 @@
             border-radius: 12px;
             padding: 2rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            min-height: 700px;
             position: relative;
+            width: 100%;
+            height: calc(100vh - 200px);
+            min-height: 500px;
         }
         
         .bubble {
@@ -199,9 +201,9 @@
                         <option value="5">Last 5 minutes</option>
                         <option value="15">Last 15 minutes</option>
                         <option value="30">Last 30 minutes</option>
-                        <option value="60" selected>Last 1 hour</option>
+                        <option value="60">Last 1 hour</option>
                         <option value="240">Last 4 hours</option>
-                        <option value="1440">Last 24 hours</option>
+                        <option value="1440" selected>Last 24 hours</option>
                     </select>
                 </div>
                 <div style="display: flex; align-items: center;">
@@ -352,8 +354,9 @@
             
             const container = document.getElementById('chart-container');
             const containerRect = container.getBoundingClientRect();
+            // Use full container dimensions (accounting for padding)
             const width = containerRect.width - 40;
-            const height = 700;
+            const height = containerRect.height - 40;
             
             // Create SVG
             const svg = d3.select('#chart-container')
