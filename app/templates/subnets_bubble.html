@@ -424,6 +424,55 @@
         let hiddenSubnets = new Set(); // Track hidden subnet netuids
         let allNodes = []; // Store all nodes for physics updates
         
+        // localStorage keys
+        const STORAGE_KEY_HIDDEN = 'subnets_bubble_hidden';
+        const STORAGE_KEY_SEARCH = 'subnets_bubble_search';
+        
+        // Save hidden subnets to localStorage
+        function saveHiddenSubnets() {
+            try {
+                const hiddenArray = Array.from(hiddenSubnets);
+                localStorage.setItem(STORAGE_KEY_HIDDEN, JSON.stringify(hiddenArray));
+            } catch (e) {
+                console.warn('Failed to save hidden subnets to localStorage:', e);
+            }
+        }
+        
+        // Load hidden subnets from localStorage
+        function loadHiddenSubnets() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY_HIDDEN);
+                if (saved) {
+                    const hiddenArray = JSON.parse(saved);
+                    hiddenSubnets = new Set(hiddenArray.map(id => parseInt(id)));
+                }
+            } catch (e) {
+                console.warn('Failed to load hidden subnets from localStorage:', e);
+                hiddenSubnets = new Set();
+            }
+        }
+        
+        // Save search filter to localStorage
+        function saveSearchFilter(value) {
+            try {
+                const searchValue = value !== undefined ? value : document.getElementById('subnet-search').value;
+                localStorage.setItem(STORAGE_KEY_SEARCH, searchValue || '');
+            } catch (e) {
+                console.warn('Failed to save search filter to localStorage:', e);
+            }
+        }
+        
+        // Load search filter from localStorage
+        function loadSearchFilter() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY_SEARCH);
+                return saved || '';
+            } catch (e) {
+                console.warn('Failed to load search filter from localStorage:', e);
+                return '';
+            }
+        }
+        
         // Fetch subnet data and render visualization
         async function loadSubnetData() {
             const selectedPeriod = parseInt(document.getElementById('period-select').value);
@@ -443,6 +492,33 @@
                     priceChange: subnet.price_change || 0
                 }));
                 
+                // Load saved search filter first
+                const savedSearch = loadSearchFilter();
+                const searchInput = document.getElementById('subnet-search');
+                
+                if (savedSearch && savedSearch.trim() && searchInput) {
+                    // If there's a saved search, apply it (this will set hiddenSubnets)
+                    searchInput.value = savedSearch;
+                    const searchTerm = savedSearch.toLowerCase().trim();
+                    hiddenSubnets.clear(); // Start fresh
+                    currentData.forEach(subnet => {
+                        const matches = subnet.name.toLowerCase().includes(searchTerm) || 
+                                      subnet.netuid.toString().includes(searchTerm);
+                        if (!matches) {
+                            hiddenSubnets.add(subnet.netuid);
+                        }
+                    });
+                } else {
+                    // If no search, load saved hidden subnets
+                    loadHiddenSubnets();
+                    // Filter out netuids that don't exist in current data
+                    const validNetuids = new Set(currentData.map(s => s.netuid));
+                    hiddenSubnets = new Set(Array.from(hiddenSubnets).filter(id => validNetuids.has(id)));
+                    if (searchInput) {
+                        searchInput.value = '';
+                    }
+                }
+                
                 // Clear previous chart
                 const loadingEl = document.getElementById('loading');
                 if (loadingEl) loadingEl.style.display = 'none';
@@ -450,6 +526,13 @@
                 
                 renderBubbleChart(currentData);
                 updateStats(currentData);
+                
+                // Update UI after rendering
+                updateBubbleVisibility();
+                updateHiddenList();
+                
+                // Save the final state (with cleaned up netuids)
+                saveHiddenSubnets();
                 
                 // Display period info
                 console.log(`Showing price changes from block ${data.historical_block} to ${data.current_block} (${data.period_minutes} minutes)`);
@@ -482,11 +565,14 @@
             const subnetSearch = document.getElementById('subnet-search');
             subnetSearch.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase().trim();
+                saveSearchFilter(e.target.value); // Save search filter
+                
                 if (!searchTerm) {
                     // Show all if search is empty
                     hiddenSubnets.clear();
                     updateBubbleVisibility();
                     updateHiddenList();
+                    saveHiddenSubnets(); // Save to localStorage
                     return;
                 }
                 
@@ -503,6 +589,7 @@
                     });
                     updateBubbleVisibility();
                     updateHiddenList();
+                    saveHiddenSubnets(); // Save to localStorage
                 }
             });
             
@@ -510,8 +597,10 @@
             document.getElementById('show-all-btn').addEventListener('click', () => {
                 hiddenSubnets.clear();
                 subnetSearch.value = '';
+                saveSearchFilter(''); // Clear saved search
                 updateBubbleVisibility();
                 updateHiddenList();
+                saveHiddenSubnets(); // Save to localStorage
             });
             
             // Hide all button
@@ -524,6 +613,7 @@
                     });
                     updateBubbleVisibility();
                     updateHiddenList();
+                    saveHiddenSubnets(); // Save to localStorage
                 }
             });
             
@@ -532,6 +622,8 @@
                 container.innerHTML = '<div class="loading" id="loading">Loading data for selected period...</div>';
                 hiddenSubnets.clear(); // Reset hidden subnets when period changes
                 subnetSearch.value = '';
+                saveHiddenSubnets(); // Save cleared state
+                saveSearchFilter(''); // Clear saved search
                 loadSubnetData();
             });
             
@@ -631,6 +723,7 @@
                     hiddenSubnets.delete(subnet.netuid);
                     updateBubbleVisibility();
                     updateHiddenList();
+                    saveHiddenSubnets(); // Save to localStorage
                 });
                 hiddenItems.appendChild(item);
             });
@@ -771,6 +864,7 @@
                     }
                     updateBubbleVisibility();
                     updateHiddenList();
+                    saveHiddenSubnets(); // Save to localStorage
                 });
             
             // Add text labels (show netuid, price, and percentage)
