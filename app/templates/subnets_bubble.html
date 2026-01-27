@@ -446,8 +446,12 @@
                 .on('mouseover', handleMouseOver)
                 .on('mousemove', handleMouseMove)
                 .on('mouseout', handleMouseOut)
-                .on('click', (event, d) => {
-                    window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
+                .on('click', function(event, d) {
+                    // Only open link if it was a click, not a drag
+                    if (!hasDragged && !d.isDragging) {
+                        window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
+                    }
+                    hasDragged = false; // Reset for next interaction
                 });
             
             // Add text labels (show netuid, price, and percentage)
@@ -507,16 +511,57 @@
                 node.vx = (Math.random() - 0.5) * 2; // Random velocity
                 node.vy = (Math.random() - 0.5) * 2;
                 node.element = null;
+                node.isDragging = false; // Track if node is being dragged
             });
             
             bubbleGroups.each(function(d, i) {
                 d.element = this;
             });
             
+            // Track drag distance to distinguish from clicks
+            let dragStartPos = null;
+            let hasDragged = false;
+            
+            // Add drag behavior
+            const drag = d3.drag()
+                .on('start', function(event, d) {
+                    dragStartPos = { x: event.x, y: event.y };
+                    hasDragged = false;
+                    d.isDragging = true;
+                    d.vx = 0;
+                    d.vy = 0;
+                    d3.select(this).raise().attr('stroke', '#60a5fa').attr('stroke-width', 3);
+                })
+                .on('drag', function(event, d) {
+                    // Check if mouse has moved significantly (more than 5px)
+                    if (dragStartPos) {
+                        const dx = Math.abs(event.x - dragStartPos.x);
+                        const dy = Math.abs(event.y - dragStartPos.y);
+                        if (dx > 5 || dy > 5) {
+                            hasDragged = true;
+                        }
+                    }
+                    d.x = event.x;
+                    d.y = event.y;
+                    d3.select(this).attr('transform', `translate(${d.x},${d.y})`);
+                })
+                .on('end', function(event, d) {
+                    d.isDragging = false;
+                    // Give it a small random velocity when released
+                    d.vx = (Math.random() - 0.5) * 0.5;
+                    d.vy = (Math.random() - 0.5) * 0.5;
+                    d3.select(this).attr('stroke', null);
+                    dragStartPos = null;
+                });
+            
+            // Apply drag to bubble groups
+            bubbleGroups.call(drag);
+            
             // Collision detection and physics update
             function updatePhysics() {
-                // Update positions
+                // Update positions (skip nodes being dragged)
                 nodes.forEach(node => {
+                    if (node.isDragging) return; // Skip physics for dragged nodes
                     node.x += node.vx;
                     node.y += node.vy;
                     
@@ -542,11 +587,14 @@
                     }
                 });
                 
-                // Check collisions between bubbles
+                // Check collisions between bubbles (skip dragged nodes)
                 for (let i = 0; i < nodes.length; i++) {
                     for (let j = i + 1; j < nodes.length; j++) {
                         const node1 = nodes[i];
                         const node2 = nodes[j];
+                        
+                        // Skip collision if either node is being dragged
+                        if (node1.isDragging || node2.isDragging) continue;
                         
                         const dx = node2.x - node1.x;
                         const dy = node2.y - node1.y;
