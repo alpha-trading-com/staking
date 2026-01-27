@@ -189,17 +189,28 @@
 <body>
     <div class="container">
         <div class="header">
-            <a href="https://taostats.io/subnets" target="_blank" class="back-btn">Taostats</a>
-            <div style="margin-top: 1rem;">
-                <label for="period-select" style="color: #cbd5e1; margin-right: 0.5rem;">Price Change Period:</label>
-                <select id="period-select" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
-                    <option value="5">Last 5 minutes</option>
-                    <option value="15">Last 15 minutes</option>
-                    <option value="30">Last 30 minutes</option>
-                    <option value="60" selected>Last 1 hour</option>
-                    <option value="240">Last 4 hours</option>
-                    <option value="1440">Last 24 hours</option>
-                </select>
+            <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; justify-content: center;">
+                <div style="display: flex; align-items: center;">
+                <a href="https://taostats.io/subnets" target="_blank" class="back-btn" style="margin:0;display: flex; align-items: center;">Taostats</a>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <label for="period-select" style="color: #cbd5e1; margin-right: 0.5rem; display: flex; align-items: center;">Price Change Period:</label>
+                    <select id="period-select" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
+                        <option value="5">Last 5 minutes</option>
+                        <option value="15">Last 15 minutes</option>
+                        <option value="30">Last 30 minutes</option>
+                        <option value="60" selected>Last 1 hour</option>
+                        <option value="240">Last 4 hours</option>
+                        <option value="1440">Last 24 hours</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <label for="size-select" style="color: #cbd5e1; margin-right: 0.5rem; display: flex; align-items: center;">Bubble Size By:</label>
+                    <select id="size-select" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem 1rem; font-size: 0.9rem; cursor: pointer;">
+                        <option value="price" selected>Price</option>
+                        <option value="priceChange">Price Change</option>
+                    </select>
+                </div>
             </div>
         </div>
         
@@ -284,7 +295,7 @@
             loadSubnetData();
         }
         
-        // Listen for period changes
+        // Listen for period and size changes
         document.addEventListener('DOMContentLoaded', () => {
             loadSubnetData();
             
@@ -292,6 +303,14 @@
                 const container = document.getElementById('chart-container');
                 container.innerHTML = '<div class="loading" id="loading">Loading data for selected period...</div>';
                 loadSubnetData();
+            });
+            
+            document.getElementById('size-select').addEventListener('change', () => {
+                if (currentData) {
+                    const container = document.getElementById('chart-container');
+                    container.innerHTML = '';
+                    renderBubbleChart(currentData);
+                }
             });
         });
         
@@ -312,9 +331,14 @@
                 ? Math.max(...validSubnets.map(s => s.price)).toFixed(4)
                 : '0.0000';
             
-            document.getElementById('total-subnets').textContent = totalSubnets;
-            document.getElementById('avg-price').textContent = avgPrice + ' τ';
-            document.getElementById('highest-price').textContent = highestPrice + ' τ';
+            // Only update stats if the elements exist (stats section may be commented out)
+            const totalSubnetsEl = document.getElementById('total-subnets');
+            const avgPriceEl = document.getElementById('avg-price');
+            const highestPriceEl = document.getElementById('highest-price');
+            
+            if (totalSubnetsEl) totalSubnetsEl.textContent = totalSubnets;
+            if (avgPriceEl) avgPriceEl.textContent = avgPrice + ' τ';
+            if (highestPriceEl) highestPriceEl.textContent = highestPrice + ' τ';
         }
         
         function renderBubbleChart(subnets) {
@@ -337,14 +361,27 @@
                 .attr('width', width)
                 .attr('height', height);
             
-            // Calculate bubble sizes
-            const maxPrice = d3.max(validSubnets, d => d.price);
-            const minPrice = d3.min(validSubnets, d => d.price);
+            // Get bubble size option
+            const sizeBy = document.getElementById('size-select').value;
             
-            // Size scale - make the range more reasonable for visualization
-            const sizeScale = d3.scaleSqrt()
-                .domain([minPrice, maxPrice])
-                .range([20, 120]);
+            // Calculate bubble sizes based on selected option
+            let sizeScale;
+            if (sizeBy === 'priceChange') {
+                // Size by absolute price change
+                const priceChanges = validSubnets.map(d => Math.abs(d.priceChange || 0));
+                const maxChange = d3.max(priceChanges);
+                const minChange = d3.min(priceChanges);
+                sizeScale = d3.scaleSqrt()
+                    .domain([minChange, maxChange])
+                    .range([20, 120]);
+            } else {
+                // Size by price (default)
+                const maxPrice = d3.max(validSubnets, d => d.price);
+                const minPrice = d3.min(validSubnets, d => d.price);
+                sizeScale = d3.scaleSqrt()
+                    .domain([minPrice, maxPrice])
+                    .range([20, 120]);
+            }
             
             // Color scale based on price change
             const colorScale = d => {
@@ -356,7 +393,9 @@
             // Prepare data with initial positions using D3 force layout for initial placement
             const nodes = validSubnets.map(subnet => ({
                 ...subnet,
-                radius: sizeScale(subnet.price)
+                radius: sizeBy === 'priceChange' 
+                    ? sizeScale(Math.abs(subnet.priceChange || 0))
+                    : sizeScale(subnet.price)
             }));
             
             // Use D3 force simulation just for initial positioning
@@ -392,30 +431,55 @@
                     window.open(`https://taostats.io/subnets/${d.netuid}/chart`, '_blank');
                 });
             
-            // Add text labels (show netuid and percentage)
+            // Add text labels (show netuid, price, and percentage)
             bubbleGroups.each(function(d) {
                 const group = d3.select(this);
-                const fontSize = Math.max(10, d.radius / 3);
+                const baseFontSize = Math.max(12, d.radius / 2.5);
+                const netuidFontSize = baseFontSize;
+                const priceFontSize = baseFontSize * 0.75;
+                const changeFontSize = baseFontSize * 0.65;
                 
-                // Add netuid text
+                // Calculate line height based on font size (reduced spacing)
+                const lineHeight = baseFontSize * 0.9;
+                
+                // Calculate total height of text block and center it
+                const hasChange = d.priceChange !== 0;
+                const totalLines = hasChange ? 3 : 2;
+                const totalHeight = (totalLines - 1) * lineHeight;
+                const startY = -totalHeight / 2;
+                
+                // Add netuid text (top line)
                 group.append('text')
                     .attr('class', 'bubble-text')
                     .attr('text-anchor', 'middle')
-                    .attr('dy', d.priceChange !== 0 ? '-0.3em' : '0.35em')
+                    .attr('y', startY)
                     .text(d.netuid)
-                    .style('font-size', fontSize + 'px')
-                    .style('font-weight', '700');
+                    .style('font-size', netuidFontSize + 'px')
+                    .style('font-weight', '700')
+                    .style('fill', '#fff');
                 
-                // Add percentage text if there's a change
-                if (d.priceChange !== 0) {
+                // Add price text (middle line)
+                const priceText = d.price.toFixed(4) + ' τ';
+                group.append('text')
+                    .attr('class', 'bubble-text')
+                    .attr('text-anchor', 'middle')
+                    .attr('y', startY + lineHeight)
+                    .text(priceText)
+                    .style('font-size', priceFontSize + 'px')
+                    .style('font-weight', '600')
+                    .style('fill', '#fff');
+                
+                // Add percentage text if there's a change (bottom line)
+                if (hasChange) {
                     const changeText = (d.priceChange > 0 ? '+' : '') + d.priceChange.toFixed(1) + '%';
                     group.append('text')
                         .attr('class', 'bubble-text')
                         .attr('text-anchor', 'middle')
-                        .attr('dy', '1em')
+                        .attr('y', startY + lineHeight * 2)
                         .text(changeText)
-                        .style('font-size', (fontSize * 0.75) + 'px')
-                        .style('font-weight', '600');
+                        .style('font-size', changeFontSize + 'px')
+                        .style('font-weight', '600')
+                        .style('fill', '#fff');
                 }
             });
             

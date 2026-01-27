@@ -1,8 +1,9 @@
 import fastapi
 import bittensor as bt
 import subprocess
-from fastapi import Depends
-from fastapi.responses import HTMLResponse
+import requests
+from fastapi import Depends, Query
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.routes import router
@@ -13,6 +14,7 @@ from app.services.stake import stake_service
 from app.services.auth import get_current_username
 from utils.stake_list import get_stake_list
 from utils.stake_list_v2 import get_stake_list_v2
+from utils.subnet_history import get_subnet_history
 
 
 app = fastapi.FastAPI()
@@ -113,6 +115,94 @@ def subnets_page(request: fastapi.Request, username: str = Depends(get_current_u
         "subnets_bubble.html",
         {"request": request}
     )
+
+@app.get("/subnets_data")
+def subnets_data(
+    period_minutes: int = Query(..., description="Time period in minutes to look back"),
+    username: str = Depends(get_current_username)
+):
+    """
+    Fetch historical subnet data from Taostats API.
+    Returns subnet price changes over the specified time period.
+    """
+    try:
+        # Get current block from subtensor
+        subtensor = stake_service.subtensor
+        current_block = subtensor.get_current_block()
+        
+        # Calculate historical block (approximately 12 seconds per block, so ~5 blocks per minute)
+        blocks_per_minute = 5
+        blocks_back = period_minutes * blocks_per_minute
+        historical_block = max(1, current_block - blocks_back)
+        
+        # Fetch historical subnet data from Taostats API
+        historical_subnets = get_subnet_history(historical_block)
+        current_subnets = subtensor.all_subnets()
+
+        # Convert lists to dicts for faster lookup by netuid
+        historical_dict = {sub['netuid']: sub for sub in historical_subnets}
+        current_dict = {sub.netuid: sub for sub in current_subnets}
+
+        subnets = []
+        for netuid, current_subnet in current_dict.items():
+            historical_subnet = historical_dict.get(netuid)
+            if historical_subnet is None:
+                # subnet didn't exist at historical_block (or not found)
+                continue
+            
+            # Get prices
+            price_then = float(historical_subnet.get("price", 0) or 0)
+            price_now = float(current_subnet.price.tao if hasattr(current_subnet.price, 'tao') else current_subnet.price)
+            
+            # Calculate price change percentage
+            if price_then > 0:
+                price_change = ((price_now - price_then) / price_then) * 100
+            else:
+                price_change = 0.0
+            
+            # Build subnet object with all required fields
+            subnet_obj = {
+                "netuid": netuid,
+                "name": current_subnet.subnet_name if hasattr(current_subnet, 'subnet_name') else f'Subnet {netuid}',
+                "price": price_now,
+                "price_change": price_change,
+            }
+            
+            # Add additional fields if available
+            if hasattr(current_subnet, 'tao_in'):
+                subnet_obj["tao_in"] = float(current_subnet.tao_in.tao if hasattr(current_subnet.tao_in, 'tao') else current_subnet.tao_in)
+            else:
+                subnet_obj["tao_in"] = 0.0
+            
+            if hasattr(current_subnet, 'alpha_in'):
+                subnet_obj["alpha_in"] = float(current_subnet.alpha_in.tao if hasattr(current_subnet.alpha_in, 'tao') else current_subnet.alpha_in)
+            else:
+                subnet_obj["alpha_in"] = 0.0
+            
+            # Check if subnet is dynamic (has liquid_alpha_enabled or similar)
+            subnet_obj["is_dynamic"] = getattr(current_subnet, 'liquid_alpha_enabled', False)
+            
+            subnets.append(subnet_obj)
+
+        return JSONResponse(content={
+            "success": True,
+            "subnets": subnets,
+            "current_block": current_block,
+            "historical_block": historical_block,
+            "period_minutes": period_minutes
+        })
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": "Internal server error",
+                "details": str(e)
+            }
+        )
+    
+
 
 @app.get("/settings/tolerance_offset")
 def get_tolerance_offset(username: str = Depends(get_current_username)):
