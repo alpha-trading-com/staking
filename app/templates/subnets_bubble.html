@@ -230,6 +230,12 @@
                         <option value="priceChange">Price Change</option>
                     </select>
                 </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="size-min" style="color: #cbd5e1; display: flex; align-items: center;">Size Range:</label>
+                    <input type="number" id="size-min" min="10" max="200" value="30" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem; font-size: 0.9rem; width: 60px; text-align: center;">
+                    <span style="color: #cbd5e1;">-</span>
+                    <input type="number" id="size-max" min="10" max="200" value="90" style="background: #232a36; color: #e5e7eb; border: 1px solid #60a5fa; border-radius: 6px; padding: 0.5rem; font-size: 0.9rem; width: 60px; text-align: center;">
+                </div>
             </div>
         </div>
         
@@ -331,6 +337,36 @@
                     renderBubbleChart(currentData);
                 }
             });
+            
+            // Listen for bubble size range changes
+            const sizeMinInput = document.getElementById('size-min');
+            const sizeMaxInput = document.getElementById('size-max');
+            
+            function updateBubbleSizes() {
+                const minSize = parseInt(sizeMinInput.value) || 30;
+                const maxSize = parseInt(sizeMaxInput.value) || 90;
+                
+                // Validate: ensure min < max
+                if (minSize >= maxSize) {
+                    if (sizeMinInput === document.activeElement) {
+                        sizeMaxInput.value = Math.min(200, minSize + 1);
+                    } else {
+                        sizeMinInput.value = Math.max(10, maxSize - 1);
+                    }
+                    return;
+                }
+                
+                if (currentData) {
+                    const container = document.getElementById('chart-container');
+                    container.innerHTML = '';
+                    renderBubbleChart(currentData);
+                }
+            }
+            
+            sizeMinInput.addEventListener('input', updateBubbleSizes);
+            sizeMinInput.addEventListener('change', updateBubbleSizes);
+            sizeMaxInput.addEventListener('input', updateBubbleSizes);
+            sizeMaxInput.addEventListener('change', updateBubbleSizes);
         });
         
         function showError(message) {
@@ -383,6 +419,11 @@
             // Get bubble size option
             const sizeBy = document.getElementById('size-select').value;
             
+            // Get bubble size range from inputs
+            const minSize = parseInt(document.getElementById('size-min').value) || 30;
+            const maxSize = parseInt(document.getElementById('size-max').value) || 90;
+            const sizeRange = [Math.max(10, Math.min(200, minSize)), Math.max(10, Math.min(200, maxSize))];
+            
             // Calculate bubble sizes based on selected option
             let sizeScale;
             if (sizeBy === 'priceChange') {
@@ -392,14 +433,14 @@
                 const minChange = d3.min(priceChanges);
                 sizeScale = d3.scaleSqrt()
                     .domain([minChange, maxChange])
-                    .range([30, 90]);
+                    .range(sizeRange);
             } else {
                 // Size by price (default)
                 const maxPrice = d3.max(validSubnets, d => d.price);
                 const minPrice = d3.min(validSubnets, d => d.price);
                 sizeScale = d3.scaleSqrt()
                     .domain([minPrice, maxPrice])
-                    .range([30, 90]);
+                    .range(sizeRange);
             }
             
             // Color scale based on price change
