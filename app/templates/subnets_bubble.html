@@ -392,14 +392,14 @@
                 const minChange = d3.min(priceChanges);
                 sizeScale = d3.scaleSqrt()
                     .domain([minChange, maxChange])
-                    .range([20, 120]);
+                    .range([30, 90]);
             } else {
                 // Size by price (default)
                 const maxPrice = d3.max(validSubnets, d => d.price);
                 const minPrice = d3.min(validSubnets, d => d.price);
                 sizeScale = d3.scaleSqrt()
                     .domain([minPrice, maxPrice])
-                    .range([20, 120]);
+                    .range([30, 90]);
             }
             
             // Color scale based on price change
