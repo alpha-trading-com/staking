@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.routes import router
-from app.core.config import settings
+from app.core.config import settings, save_tolerance_offset
 from app.constants import NETWORK
 from app.services.wallets import wallets
 from app.services.stake import stake_service
@@ -224,4 +224,7 @@ def set_tolerance_offset(request: fastapi.Request, username: str = Depends(get_c
             settings.TOLERANCE_OFFSET = float(tolerance_offset)
         except ValueError:
             return {"error": "Tolerance offset must be a valid number or multiplication (e.g., '*1.1')"}
+    
+    # Save to file for persistence
+    save_tolerance_offset(settings.TOLERANCE_OFFSET)
     return {"success": True}
