@@ -44,6 +44,16 @@ def stake(
     # Validate retries parameter
     if retries < 1:
         retries = 1    
+
+    if rate_tolerance > 1.9:
+        return stake_service.stake_not_limit(
+            tao_amount=tao_amount,
+            netuid=netuid,
+            wallet_name=wallet_name,
+            dest_hotkey=dest_hotkey,
+            retries=retries,
+            use_era=use_era
+        )
     
     # Get wallet and delegator
     if wallet_name not in stake_service.wallets:
@@ -81,6 +91,16 @@ def unstake(
     # Validate retries parameter
     if retries < 1:
         retries = 1    
+    
+    if rate_tolerance > 1.9:
+        return stake_service.unstake_not_limit(
+            netuid=netuid,
+            wallet_name=wallet_name,
+            amount=amount,
+            dest_hotkey=dest_hotkey,
+            retries=retries,
+            use_era=use_era
+        )
     
     # Get wallet and delegator
     if wallet_name not in stake_service.wallets:

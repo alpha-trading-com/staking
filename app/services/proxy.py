@@ -70,6 +70,44 @@ class Proxy:
             return False, f"Error: {error_message}"
 
 
+    def add_stake_not_limit(
+        self, 
+        proxy_wallet: bt.Wallet,
+        delegator: str,
+        netuid: int, 
+        hotkey: str, 
+        amount: Balance, 
+        use_era: Optional[bool] = None,
+    ) -> tuple[bool, str]:
+        """
+        Add stake to a subnet.
+        
+        Args:
+            proxy_wallet: Proxy wallet
+            netuid: Network/subnet ID
+            hotkey: Hotkey address
+            amount: Amount to stake
+            tolerance: Tolerance for stake amount
+            allow_partial: Whether to allow partial staking
+            use_era: Whether to use era parameter (overrides instance default if provided)
+        """
+        self.init_runtime()
+        call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='add_stake',
+            call_params={
+                "hotkey": hotkey,
+                "netuid": netuid,
+                "amount_staked": amount.rao,
+            }
+        )
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
+        
+        if is_success:
+            return True, f"Stake added successfully"
+        else:
+            return False, f"Error: {error_message}"
+
     def remove_stake(
         self, 
         proxy_wallet: bt.Wallet,
@@ -103,6 +141,41 @@ class Proxy:
                 "amount_unstaked": amount.rao - 1,
                 "limit_price": price_with_tolerance,
                 "allow_partial": allow_partial,
+            }
+        )
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
+        if is_success:
+            return True, f"Stake removed successfully"
+        else:
+            return False, f"Error: {error_message}"
+            
+    def remove_stake_not_limit(
+        self, 
+        proxy_wallet: bt.Wallet,
+        delegator: str,
+        netuid: int,
+        hotkey: str,
+        amount: Balance,
+        use_era: Optional[bool] = None,
+    ) -> tuple[bool, str]:
+        """
+        Remove stake from a subnet.
+        
+        Args:
+            proxy_wallet: Proxy wallet
+            netuid: Network/subnet ID
+            hotkey: Hotkey address
+            amount: Amount to unstake (if not using --all)
+            use_era: Whether to use era parameter (overrides instance default if provided)
+        """
+        self.init_runtime()
+        call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='remove_stake',
+            call_params={
+                "hotkey": hotkey,
+                "netuid": netuid,
+                "amount_unstaked": amount.rao - 1,
             }
         )
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
@@ -147,6 +220,8 @@ class Proxy:
         print(f"Register successfully: {is_success}")
         print(f"Error: {error_message}")
         return is_success, error_message
+
+    
 
     def move_stake(
         self, 

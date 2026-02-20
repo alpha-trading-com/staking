@@ -128,6 +128,59 @@ class StakeService:
             "error": msg
         }
     
+
+    def stake_not_limit(
+        self,
+        tao_amount: float,
+        netuid: int,
+        wallet_name: str,
+        dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA
+    ) -> Dict[str, Any]:
+        """
+        Execute staking operation with retry mechanism and error handling.
+        
+        Args:
+            tao_amount: Amount to stake in TAO
+            netuid: Network/subnet ID
+            wallet_name: Name of the wallet to use
+            dest_hotkey: Destination hotkey address
+            retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation
+            
+        Returns:
+            Dict containing success status, result, and min_tolerance
+        """
+        wallet, delegator = self.wallets[wallet_name]
+        
+        # Execute staking with retry mechanism
+        success = False
+        msg = None
+
+        for _ in range(retries):
+            try:
+                result, msg = self.proxy.add_stake_not_limit(
+                    amount=bt.Balance.from_tao(tao_amount),
+                    proxy_wallet=wallet,
+                    delegator=delegator,
+                    netuid=netuid,
+                    hotkey=dest_hotkey,
+                    use_era=use_era,
+                )
+                if result:
+                    success = True
+                    break
+            except Exception as e:
+                msg = str(e)
+                continue
+        
+        # This should never be reached, but required for type checking
+        return {
+            "success": success,
+            "error": msg
+        }
+    
     def unstake(
         self,
         netuid: int,
@@ -221,6 +274,85 @@ class StakeService:
                     break     
             except Exception as e:
                 msg = str(e)                
+                continue
+        
+        # This should never be reached, but required for type checking
+        return {
+            "success": success,
+            "error": msg
+        }
+    
+
+    def unstake_not_limit(
+        self,
+        netuid: int,
+        wallet_name: str,
+        amount: Optional[float] = None,
+        dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
+        retries: int = settings.DEFAULT_RETRIES,
+        use_era: bool = settings.USE_ERA
+    ) -> Dict[str, Any]:
+        """
+        Execute unstaking operation with retry mechanism and error handling.
+        
+        Args:
+            netuid: Network/subnet ID
+            wallet_name: Name of the wallet to use
+            amount: Amount to unstake (if None, unstakes all available)
+            dest_hotkey: Destination hotkey address
+            retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation
+            
+        Returns:
+            Dict containing success status, result, and min_tolerance
+        """
+        wallet, delegator = self.wallets[wallet_name]
+        
+        # Determine amount to unstake
+        if amount is None:
+            # Unstake all available balance
+            amount_balance = self.subtensor.get_stake(
+                coldkey_ss58=delegator,
+                hotkey_ss58=dest_hotkey,
+                netuid=netuid
+            )
+        else:
+            if amount < 1:
+                # Unstake percentage of the total staked amount (100 * amount percent)
+                total_stake = self.subtensor.get_stake(
+                    coldkey_ss58=delegator,
+                    hotkey_ss58=dest_hotkey,
+                    netuid=netuid
+                )
+                amount_balance = total_stake * amount
+            else:
+                amount_balance = bt.Balance.from_tao(amount, netuid)
+
+        if amount_balance.rao <= 0:
+            return {
+                "success": False,
+                "error": "No balance to unstake"
+            }
+        
+        # Execute unstaking with retry mechanism
+        success = False
+        msg = None
+
+        for _ in range(retries):
+            try:
+                result, msg = self.proxy.remove_stake_not_limit(
+                    amount=amount_balance,
+                    proxy_wallet=wallet,
+                    delegator=delegator,
+                    netuid=netuid,
+                    hotkey=dest_hotkey,
+                    use_era=use_era,
+                )
+                if result:
+                    success = True
+                    break
+            except Exception as e:
+                msg = str(e)
                 continue
         
         # This should never be reached, but required for type checking
