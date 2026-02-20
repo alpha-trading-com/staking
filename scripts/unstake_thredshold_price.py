@@ -16,20 +16,21 @@ from app.services.proxy import Proxy
 from utils.logger import logger
 
 
-WALLET_NAMES: List[str] = ["black", "green"]
-DELEGATORS: List[str] = ["5DZhYqgHhRPYUHqjaU2gS2LNL7VS8Fb5utxZ7QEkVGqTnmh5","5FWhdv8o7fGo6yn54qXCn1xTxXsMaNLaotKYzUSG2iZp4tVZ"]
+WALLET_NAMES: List[str] = ["soon", "soon_2"]
+DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ", "5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
 
 if __name__ == '__main__':
+    subtensor = bt.Subtensor(network=settings.NETWORK)
+    
+    
     netuid = int(input("Enter the netuid: "))
     threshold = float(input("Enter the threshold: "))
     wallet_name = input("Enter the wallet name: ")
     delegator = DELEGATORS[WALLET_NAMES.index(wallet_name)]
     dest_hotkey = input("Enter the dest hotkey (default is Round table): ") or ROUND_TABLE_HOTKEY
-    tolerance = float(input("Enter the tolerance: "))
 
     proxy = Proxy(network=settings.NETWORK)
     proxy.init_runtime()
-    subtensor = bt.Subtensor(network=settings.NETWORK)
     wallet = bt.Wallet(name=wallet_name)
     wallet.unlock_coldkey()
 
@@ -40,7 +41,7 @@ if __name__ == '__main__':
     )
 
     print("Press Ctrl+C to stop the script")
-    print(f"Wallet: {wallet_name}, Delegator: {delegator}, Dest Hotkey: {dest_hotkey}, Amount: {amount_balance.tao}, Tolerance: {tolerance}")
+    print(f"Wallet: {wallet_name}, Delegator: {delegator}, Dest Hotkey: {dest_hotkey}, Amount: {amount_balance.tao}")
 
     time.sleep(10)
     while True:
@@ -59,10 +60,6 @@ if __name__ == '__main__':
             if amount_balance is None:
                 logger.error(f"Amount balance is None for netuid: {netuid}")
                 continue
-
-            if amount_balance.tao < 1:
-                logger.info(f"Amount balance is less than 1 TAO for netuid: {netuid}. Skipping...")
-                continue
             
             alpha_price = subnet.alpha_to_tao(1)
             logger.info(f"Current alpha token price: {alpha_price} TAO")
@@ -71,13 +68,13 @@ if __name__ == '__main__':
                 logger.info(f"Current price {alpha_price} TAO is below threshold {threshold} TAO. Skipping...")
                 continue
             
-            success, msg = proxy.remove_stake(
+            success, msg = proxy.remove_stake_not_limit(
                 proxy_wallet=wallet,
                 delegator=delegator,
                 netuid=netuid,
                 hotkey=dest_hotkey,
                 amount=amount_balance,
-                tolerance=tolerance,
+                use_era=True,
             )
             if success:
                 break
