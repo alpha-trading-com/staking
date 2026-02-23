@@ -195,9 +195,95 @@
         .text-gray-400 {
             color: #a1a1aa;
         }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: #232a36;
+            color: #e5e7eb;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid #353b48;
+            min-width: 250px;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideInRight 0.3s ease-out;
+            transition: all 0.3s ease;
+        }
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+        .toast-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        .toast.success .toast-icon {
+            color: #10b981;
+        }
+        .toast.error .toast-icon {
+            color: #ef4444;
+        }
+        .toast-message {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        .toast-close {
+            background: none;
+            border: none;
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: color 0.2s;
+        }
+        .toast-close:hover {
+            color: #e5e7eb;
+        }
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-[#181c24] text-white min-h-screen p-4">
+    <div class="toast-container" id="toastContainer"></div>
     <div class="max-w-4xl mx-auto" style="margin-top:0.1rem;margin-bottom:0.1rem;">
         <!-- Tabs -->
         <div class="tab-bar">
@@ -247,6 +333,7 @@
                     <div class="flex items-center gap-3">
                         <input type="text" id="rateTolerance" class="input-field flex-1" value="0.5" step="0.0001">
                         <button onclick="stake()" class="btn">Stake</button>
+                        <button type="button" onclick="copyStakeCommand()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap; background: #10b981;">Copy Cmd</button>
                         <button type="button" onclick="calculateAndSetMinTolerance()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap;">Calculate Min Tolerance</button>
                         <input type="checkbox" id="minToleranceStaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleRateTolerance()">
                         <label for="minToleranceStaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
@@ -291,6 +378,7 @@
                     <div class="flex items-center gap-3">
                         <input type="text" id="unstakeRateTolerance" class="input-field flex-1" value="0.5" step="0.0001">
                         <button onclick="unstake()" class="btn btn-danger">Unstake</button>
+                        <button type="button" onclick="copyUnstakeCommand()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap; background: #10b981;">Copy Cmd</button>
                         <input type="checkbox" id="minToleranceUnstaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleUnstakeRateTolerance()">
                         <label for="minToleranceUnstaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
                         <input type="checkbox" id="allowPartialUnstaking" class="form-checkbox h-4 w-4 text-blue-600">
@@ -353,7 +441,10 @@
                     <input type="text" id="moveRetries" class="input-field" value="1" placeholder="Leave blank for default">
                 </div>
 
-                <button onclick="moveStake()" class="btn">Move Stake</button>
+                <div class="flex items-center gap-3">
+                    <button onclick="moveStake()" class="btn">Move Stake</button>
+                    <button type="button" onclick="copyMoveStakeCommand()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap; background: #10b981;">Copy Cmd</button>
+                </div>
             </div>
         </div>
 
@@ -981,6 +1072,214 @@
             
             // Reload the page to reset everything
             window.location.reload();
+        }
+
+        // Toast notification functions
+        function showToast(message, type = 'success', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '✓' : '✕';
+            toast.innerHTML = `
+                <span class="toast-icon">${icon}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close" onclick="removeToast(this.parentElement)">&times;</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after duration
+            setTimeout(() => {
+                removeToast(toast);
+            }, duration);
+        }
+
+        function removeToast(toast) {
+            if (!toast) return;
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.parentElement.removeChild(toast);
+                }
+            }, 300);
+        }
+
+        // Get base URL for curl commands (use localhost for backend)
+        function getBaseUrl() {
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            // Use localhost for backend curl commands, default to port 19000 if not specified
+            if (port) {
+                return `${protocol}//localhost:${port}`;
+            } else {
+                return `${protocol}//localhost:19000`;
+            }
+        }
+
+        // Generate and copy stake curl command
+        function copyStakeCommand() {
+            const walletName = document.getElementById('stakeWalletName').value;
+            const amount = document.getElementById('stakeAmount').value;
+            const netuid = document.getElementById('netuid').value;
+            const rateTolerance = document.getElementById('rateTolerance').value;
+            const validatorHotkey = document.getElementById('stakeValidatorHotkey').value;
+            const minToleranceStaking = document.getElementById('minToleranceStaking').checked;
+            const allowPartial = document.getElementById('allowPartialStaking').checked;
+            const retries = document.getElementById('stakeRetries').value;
+            const useEra = document.getElementById('useEra').checked;
+
+            if (!walletName || !amount || !netuid) {
+                showToast('Please fill in Wallet Name, TAO Amount, and Network ID', 'error');
+                return;
+            }
+
+            const baseUrl = getBaseUrl();
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/stake?wallet_name=${encodeURIComponent(walletName)}&tao_amount=${encodeURIComponent(amount)}&netuid=${encodeURIComponent(netuid)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+            
+            if (retries) {
+                curlCmd += `&retries=${encodeURIComponent(retries)}`;
+            }
+            
+            curlCmd += '"';
+
+            // Copy to clipboard
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(curlCmd).then(function() {
+                    showToast('Curl command copied to clipboard!', 'success');
+                }, function(err) {
+                    // Fallback
+                    const textarea = document.createElement('textarea');
+                    textarea.value = curlCmd;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('Curl command copied to clipboard!', 'success');
+                });
+            } else {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = curlCmd;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Curl command copied to clipboard!', 'success');
+            }
+        }
+
+        // Generate and copy unstake curl command
+        function copyUnstakeCommand() {
+            const walletName = document.getElementById('unstakeWalletName').value;
+            const netuid = document.getElementById('unstakeNetuid').value;
+            const validatorHotkey = document.getElementById('unstakeValidatorHotkey').value;
+            const amount = document.getElementById('unstakeAmount').value;
+            const rateTolerance = document.getElementById('unstakeRateTolerance').value;
+            const minToleranceUnstaking = document.getElementById('minToleranceUnstaking').checked;
+            const allowPartial = document.getElementById('allowPartialUnstaking').checked;
+            const retries = document.getElementById('unstakeRetries').value;
+            const useEra = document.getElementById('useEra').checked;
+
+            if (!walletName || !netuid) {
+                showToast('Please fill in Wallet Name and Network ID', 'error');
+                return;
+            }
+
+            const baseUrl = getBaseUrl();
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/unstake?wallet_name=${encodeURIComponent(walletName)}&netuid=${encodeURIComponent(netuid)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+            
+            if (amount) {
+                curlCmd += `&amount=${encodeURIComponent(amount)}`;
+            }
+            
+            if (retries) {
+                curlCmd += `&retries=${encodeURIComponent(retries)}`;
+            }
+            
+            curlCmd += '"';
+
+            // Copy to clipboard
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(curlCmd).then(function() {
+                    showToast('Curl command copied to clipboard!', 'success');
+                }, function(err) {
+                    // Fallback
+                    const textarea = document.createElement('textarea');
+                    textarea.value = curlCmd;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('Curl command copied to clipboard!', 'success');
+                });
+            } else {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = curlCmd;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Curl command copied to clipboard!', 'success');
+            }
+        }
+
+        // Generate and copy move stake curl command
+        function copyMoveStakeCommand() {
+            const walletName = document.getElementById('moveWalletName').value;
+            const amount = document.getElementById('moveAmount').value;
+            const originNetuid = document.getElementById('originNetuid').value;
+            const destinationNetuid = document.getElementById('destinationNetuid').value;
+            const originHotkey = document.getElementById('originHotkey').value;
+            const destinationHotkey = document.getElementById('destinationHotkey').value;
+            const retries = document.getElementById('moveRetries').value;
+            const useEra = document.getElementById('useEra').checked;
+
+            if (!walletName || !originNetuid || !destinationNetuid) {
+                showToast('Please fill in Wallet Name, Origin Network ID, and Destination Network ID', 'error');
+                return;
+            }
+
+            const baseUrl = getBaseUrl();
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/move_stake?wallet_name=${encodeURIComponent(walletName)}&origin_netuid=${encodeURIComponent(originNetuid)}&destination_netuid=${encodeURIComponent(destinationNetuid)}&origin_hotkey=${encodeURIComponent(originHotkey)}&destination_hotkey=${encodeURIComponent(destinationHotkey)}&use_era=${useEra}`;
+            
+            if (amount) {
+                curlCmd += `&amount=${encodeURIComponent(amount)}`;
+            }
+            
+            if (retries) {
+                curlCmd += `&retries=${encodeURIComponent(retries)}`;
+            }
+            
+            curlCmd += '"';
+
+            // Copy to clipboard
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(curlCmd).then(function() {
+                    showToast('Curl command copied to clipboard!', 'success');
+                }, function(err) {
+                    // Fallback
+                    const textarea = document.createElement('textarea');
+                    textarea.value = curlCmd;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('Curl command copied to clipboard!', 'success');
+                });
+            } else {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = curlCmd;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Curl command copied to clipboard!', 'success');
+            }
         }
 
         // Call this function when the page loads to set initial state
