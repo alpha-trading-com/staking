@@ -27,7 +27,9 @@ def load_bots_from_gdoc():
         print(f"Failed to load bots from Google Doc: {e}")
 
 def load_wallet_owners_from_gdoc():
-    url = "https://docs.google.com/document/d/1VUDA8mzHd_iUQEqiDWMORys6--2ab8nDSThGb--_PaQ/export?format=txt"
+    # Use the working document ID (the new one returns 410 Gone error)
+    doc_id = "1_d4mGniJfOuNuY1mPwrNjwNBAZaxrq_FKEGOo7eGXbU"
+    url = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
     try:
         global wallet_owners
         response = requests.get(url, timeout=10)
@@ -36,10 +38,17 @@ def load_wallet_owners_from_gdoc():
         # Each pair is like: <wallet_address> <owner_name>
         # build a dict mapping wallet address to owner name
         wallet_owners = {}
-        pattern = r'(5[1-9A-HJ-NP-Za-km-z]{47})\s+([^\s]+)'
-        for match in re.findall(pattern, text):
+        # Pattern captures full owner name including spaces and special characters
+        pattern = r'(5[1-9A-HJ-NP-Za-km-z]{47})\s+(.+?)(?=\n|$)'
+        for match in re.findall(pattern, text, re.MULTILINE):
             address, owner = match
-            wallet_owners[address] = owner
+            wallet_owners[address] = owner.strip()
+        print(f"Loaded {len(wallet_owners)} wallet owners from Google Doc")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 410:
+            print(f"Failed to load wallet owners: Document not accessible (410 Gone). Please ensure the document is shared publicly with 'Anyone with the link can view'.")
+        else:
+            print(f"Failed to load wallet owners from Google Doc: {e}")
     except Exception as e:
         print(f"Failed to load wallet owners from Google Doc: {e}")
 
