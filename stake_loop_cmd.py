@@ -194,14 +194,6 @@ def main():
                     print("\n\nCancelled. Returning to main menu...\n")
                     continue
             
-             # Store the last action (regardless of success or failure)
-            last_action = {
-                "wallet_name": wallet_name,
-                "action": action,
-                "netuid": netuid,
-                "amount": amount
-            }
-            
             # Execute operation
             if amount is None:
                 print(f"\n{action}ing all available TAO from netuid {netuid}...\n")
@@ -222,6 +214,15 @@ def main():
                 )
             
            
+            
+            # Store the last action (regardless of success or failure)
+            last_action = {
+                "wallet_name": wallet_name,
+                "action": action,
+                "netuid": netuid,
+                "amount": amount
+            }
+            save_last_action(last_action)
             
             if result.get("success"):
                 print(f"✓ {action} successful!\n")
