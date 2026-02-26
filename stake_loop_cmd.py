@@ -48,7 +48,7 @@ def main():
         # Main loop
         while True:
             # Select wallet (default: first wallet)
-            wallet_name = select_from_list("Select Wallet:", wallet_list, default_index=0)
+            wallet_name = select_from_list("Select Wallet:", wallet_list, default_index=1)
             
             if wallet_name is None:
                 print("\nExiting...")
