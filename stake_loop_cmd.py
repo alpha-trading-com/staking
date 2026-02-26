@@ -4,9 +4,41 @@ Interactive command loop for staking/unstaking operations.
 Uses numbered selection for menus.
 """
 
+import json
+import os
+from pathlib import Path
 from app.core.config import settings
 from app.services.stake import stake_service
 from app.services.wallets import wallets
+
+# File to store last action
+LAST_ACTION_FILE = Path(__file__).parent / "last_action.json"
+
+
+def save_last_action(last_action):
+    """Save last action to file."""
+    try:
+        with open(LAST_ACTION_FILE, 'w') as f:
+            json.dump(last_action, f, indent=2)
+    except Exception as e:
+        print(f"Warning: Could not save last action: {e}")
+
+
+def load_last_action():
+    """Load last action from file."""
+    if not LAST_ACTION_FILE.exists():
+        return None
+    
+    try:
+        with open(LAST_ACTION_FILE, 'r') as f:
+            data = json.load(f)
+            # Validate that all required fields are present
+            if all(key in data for key in ["wallet_name", "action", "netuid"]):
+                return data
+    except Exception as e:
+        print(f"Warning: Could not load last action: {e}")
+    
+    return None
 
 
 def select_from_list(prompt, options, default_index=0):
@@ -44,7 +76,11 @@ def main():
     
     wallet_list = list(wallets.keys())
     action_options = ["Stake", "Unstake"]
-    last_action = None  # Store last action: {wallet_name, action, netuid, amount}
+    
+    # Load last action from file
+    last_action = load_last_action()
+    if last_action:
+        print(f"Loaded last action: {last_action['action']} {last_action.get('amount', 'all')} TAO on netuid {last_action['netuid']} with wallet {last_action['wallet_name']}\n")
     
     try:
         # Main loop
@@ -158,6 +194,14 @@ def main():
                     print("\n\nCancelled. Returning to main menu...\n")
                     continue
             
+             # Store the last action (regardless of success or failure)
+            last_action = {
+                "wallet_name": wallet_name,
+                "action": action,
+                "netuid": netuid,
+                "amount": amount
+            }
+            
             # Execute operation
             if amount is None:
                 print(f"\n{action}ing all available TAO from netuid {netuid}...\n")
@@ -177,13 +221,7 @@ def main():
                     amount=amount,
                 )
             
-            # Store the last action (regardless of success or failure)
-            last_action = {
-                "wallet_name": wallet_name,
-                "action": action,
-                "netuid": netuid,
-                "amount": amount
-            }
+           
             
             if result.get("success"):
                 print(f"✓ {action} successful!\n")
