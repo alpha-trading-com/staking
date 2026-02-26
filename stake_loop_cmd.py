@@ -45,17 +45,17 @@ def main():
     action_options = ["Stake", "Unstake"]
     
     try:
-        # Select wallet (default: first wallet)
-        wallet_name = select_from_list("Select Wallet:", wallet_list, default_index=0)
-        
-        if wallet_name is None:
-            print("\nExiting...")
-            return
-        
-        print(f"\nUsing wallet: {wallet_name}\n")
-        
         # Main loop
         while True:
+            # Select wallet (default: first wallet)
+            wallet_name = select_from_list("Select Wallet:", wallet_list, default_index=0)
+            
+            if wallet_name is None:
+                print("\nExiting...")
+                return
+            
+            print(f"\nUsing wallet: {wallet_name}\n")
+
             # Select action (Stake or Unstake, default: Stake)
             action = select_from_list("Select Action:", action_options, default_index=0)
             
