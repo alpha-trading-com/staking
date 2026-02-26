@@ -49,11 +49,13 @@ def main():
     try:
         # Main loop
         while True:
-            # Build wallet selection list with "Repeat last action" option
+            # Build wallet selection list with "Repeat last action" and "Exit" options
             wallet_selection_list = wallet_list.copy()
             repeat_option = "Repeat last action"
+            exit_option = "Exit"
             if last_action:
                 wallet_selection_list.append(repeat_option)
+            wallet_selection_list.append(exit_option)
             
             # Select wallet (default: second wallet, index 1)
             try:
@@ -65,6 +67,11 @@ def main():
             if selected is None:
                 print("\nCancelled. Returning to main menu...\n")
                 continue
+            
+            # Check if "Exit" was selected
+            if selected == exit_option:
+                print("\nExiting program...\n")
+                break
             
             # Check if "Repeat last action" was selected
             if selected == repeat_option and last_action:
