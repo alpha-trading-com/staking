@@ -5,6 +5,9 @@ from substrateinterface.exceptions import SubstrateRequestException
 from typing import Optional, cast
 from bittensor.utils.balance import Balance, FixedPoint, fixed_to_float
 
+DEFAULT_WAIT_FOR_INCLUSION = True
+DEFAULT_WAIT_FOR_FINALIZATION = False
+
 class Proxy:
     def __init__(self, network: str, use_era: bool = True):
         """
@@ -318,8 +321,8 @@ class Proxy:
         try:
             receipt = self.substrate.submit_extrinsic(
                 extrinsic,
-                wait_for_inclusion=True,
-                wait_for_finalization=False,
+                wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
+                wait_for_finalization=DEFAULT_WAIT_FOR_FINALIZATION,
             )
         except Exception as e:
             error_message = str(e)

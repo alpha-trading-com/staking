@@ -10,9 +10,11 @@ from pathlib import Path
 from app.core.config import settings
 from app.services.stake import stake_service
 from app.services.wallets import wallets
-
+from app.services.proxy import DEFAULT_WAIT_FOR_INCLUSION, DEFAULT_WAIT_FOR_FINALIZATION
 # File to store last action
 LAST_ACTION_FILE = Path(__file__).parent / "last_action.json"
+DEFAULT_WAIT_FOR_INCLUSION = False
+DEFAULT_WAIT_FOR_FINALIZATION = False
 
 # ANSI color codes
 class Colors:
