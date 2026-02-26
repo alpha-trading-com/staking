@@ -87,9 +87,18 @@ def main():
         while True:
             # Build wallet selection list with "Repeat last action" and "Exit" options
             wallet_selection_list = wallet_list.copy()
-            repeat_option = "Repeat last action"
             exit_option = "Exit"
             if last_action:
+                # Format the repeat option with last action details
+                action = last_action['action']
+                netuid = last_action['netuid']
+                wallet_name = last_action['wallet_name']
+                amount = last_action.get('amount')
+                if amount is None:
+                    amount_str = "all"
+                else:
+                    amount_str = f"{amount}"
+                repeat_option = f"Repeat last action ({action} {amount_str} TAO on netuid {netuid} with {wallet_name})"
                 wallet_selection_list.append(repeat_option)
             wallet_selection_list.append(exit_option)
             
@@ -110,7 +119,7 @@ def main():
                 break
             
             # Check if "Repeat last action" was selected
-            if selected == repeat_option and last_action:
+            if selected.startswith("Repeat last action") and last_action:
                 wallet_name = last_action["wallet_name"]
                 action = last_action["action"]
                 netuid = last_action["netuid"]
