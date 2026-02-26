@@ -14,6 +14,19 @@ from app.services.wallets import wallets
 # File to store last action
 LAST_ACTION_FILE = Path(__file__).parent / "last_action.json"
 
+# ANSI color codes
+class Colors:
+    RESET = '\033[0m'
+    BOLD = '\033[1m'
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    GRAY = '\033[90m'
+
 
 def save_last_action(last_action):
     """Save last action to file."""
@@ -21,7 +34,7 @@ def save_last_action(last_action):
         with open(LAST_ACTION_FILE, 'w') as f:
             json.dump(last_action, f, indent=2)
     except Exception as e:
-        print(f"Warning: Could not save last action: {e}")
+        print(f"{Colors.YELLOW}Warning: Could not save last action: {e}{Colors.RESET}")
 
 
 def load_last_action():
@@ -36,22 +49,22 @@ def load_last_action():
             if all(key in data for key in ["wallet_name", "action", "netuid"]):
                 return data
     except Exception as e:
-        print(f"Warning: Could not load last action: {e}")
+        print(f"{Colors.YELLOW}Warning: Could not load last action: {e}{Colors.RESET}")
     
     return None
 
 
 def select_from_list(prompt, options, default_index=0):
     """Display numbered list and get user selection."""
-    print(f"\n{prompt}")
-    print("Select one of the following:")
+    print(f"\n{Colors.CYAN}{Colors.BOLD}{prompt}{Colors.RESET}")
+    print(f"{Colors.GRAY}Select one of the following:{Colors.RESET}")
     for i, option in enumerate(options, 1):
-        default_marker = " (default)" if i == default_index + 1 else ""
-        print(f"[{i}] {option}{default_marker}")
+        default_marker = f" {Colors.GREEN}(default){Colors.RESET}" if i == default_index + 1 else ""
+        print(f"{Colors.BLUE}[{i}]{Colors.RESET} {option}{default_marker}")
     
     while True:
         try:
-            choice = input(f"\nEnter your choice (default: {default_index + 1}): ").strip()
+            choice = input(f"\n{Colors.YELLOW}Enter your choice (default: {default_index + 1}):{Colors.RESET} ").strip()
             if not choice:
                 # Use default when Enter is pressed
                 return options[default_index]
@@ -59,19 +72,19 @@ def select_from_list(prompt, options, default_index=0):
             if 0 <= index < len(options):
                 return options[index]
             else:
-                print(f"Invalid choice. Please enter a number between 1 and {len(options)}.")
+                print(f"{Colors.RED}Invalid choice. Please enter a number between 1 and {len(options)}.{Colors.RESET}")
         except ValueError:
-            print("Invalid input. Please enter a number.")
+            print(f"{Colors.RED}Invalid input. Please enter a number.{Colors.RESET}")
         except KeyboardInterrupt:
             # Re-raise to be caught by outer handler
             raise
 
 
 def main():
-    print("=== Staking/Unstaking Command Loop ===\n")
+    print(f"{Colors.CYAN}{Colors.BOLD}=== Staking/Unstaking Command Loop ==={Colors.RESET}\n")
     
     if not wallets:
-        print("No wallets available. Please check configuration.")
+        print(f"{Colors.RED}No wallets available. Please check configuration.{Colors.RESET}")
         return
     
     wallet_list = list(wallets.keys())
@@ -80,7 +93,10 @@ def main():
     # Load last action from file
     last_action = load_last_action()
     if last_action:
-        print(f"Loaded last action: {last_action['action']} {last_action.get('amount', 'all')} TAO on netuid {last_action['netuid']} with wallet {last_action['wallet_name']}\n")
+        amount_str = last_action.get('amount', 'all')
+        if amount_str == 'all':
+            amount_str = f"{Colors.YELLOW}all{Colors.RESET}"
+        print(f"{Colors.GREEN}Loaded last action:{Colors.RESET} {Colors.CYAN}{last_action['action']}{Colors.RESET} {amount_str} TAO on netuid {Colors.BLUE}{last_action['netuid']}{Colors.RESET} with wallet {Colors.MAGENTA}{last_action['wallet_name']}{Colors.RESET}\n")
     
     try:
         # Main loop
@@ -106,16 +122,16 @@ def main():
             try:
                 selected = select_from_list("Select Wallet:", wallet_selection_list, default_index=1)
             except KeyboardInterrupt:
-                print("\n\nCancelled. Returning to main menu...\n")
+                print(f"\n\n{Colors.YELLOW}Cancelled. Returning to main menu...{Colors.RESET}\n")
                 continue
             
             if selected is None:
-                print("\nCancelled. Returning to main menu...\n")
+                print(f"\n{Colors.YELLOW}Cancelled. Returning to main menu...{Colors.RESET}\n")
                 continue
             
             # Check if "Exit" was selected
             if selected == exit_option:
-                print("\nExiting program...\n")
+                print(f"\n{Colors.CYAN}Exiting program...{Colors.RESET}\n")
                 break
             
             # Check if "Repeat last action" was selected
@@ -126,27 +142,27 @@ def main():
                 amount = last_action["amount"]
                 action_lower = action.lower()
                 
-                print(f"\nRepeating last action:")
-                print(f"Wallet: {wallet_name}")
-                print(f"Action: {action}")
-                print(f"Netuid: {netuid}")
+                print(f"\n{Colors.CYAN}{Colors.BOLD}Repeating last action:{Colors.RESET}")
+                print(f"  {Colors.GRAY}Wallet:{Colors.RESET} {Colors.MAGENTA}{wallet_name}{Colors.RESET}")
+                print(f"  {Colors.GRAY}Action:{Colors.RESET} {Colors.CYAN}{action}{Colors.RESET}")
+                print(f"  {Colors.GRAY}Netuid:{Colors.RESET} {Colors.BLUE}{netuid}{Colors.RESET}")
                 if amount is None:
-                    print(f"Amount: All available\n")
+                    print(f"  {Colors.GRAY}Amount:{Colors.RESET} {Colors.YELLOW}All available{Colors.RESET}\n")
                 else:
-                    print(f"Amount: {amount} TAO\n")
+                    print(f"  {Colors.GRAY}Amount:{Colors.RESET} {Colors.GREEN}{amount} TAO{Colors.RESET}\n")
             else:
                 wallet_name = selected
-                print(f"\nUsing wallet: {wallet_name}\n")
+                print(f"\n{Colors.GREEN}Using wallet:{Colors.RESET} {Colors.MAGENTA}{wallet_name}{Colors.RESET}\n")
 
                 # Select action (Stake or Unstake, default: Stake)
                 try:
                     action = select_from_list("Select Action:", action_options, default_index=0)
                 except KeyboardInterrupt:
-                    print("\n\nCancelled. Returning to main menu...\n")
+                    print(f"\n\n{Colors.YELLOW}Cancelled. Returning to main menu...{Colors.RESET}\n")
                     continue
                 
                 if action is None:
-                    print("\nCancelled. Returning to main menu...\n")
+                    print(f"\n{Colors.YELLOW}Cancelled. Returning to main menu...{Colors.RESET}\n")
                     continue
                 
                 action_lower = action.lower()
@@ -155,15 +171,15 @@ def main():
                 try:
                     while True:
                         try:
-                            netuid_input = input("\nEnter netuid: ").strip()
+                            netuid_input = input(f"\n{Colors.YELLOW}Enter netuid:{Colors.RESET} ").strip()
                             if not netuid_input:
                                 continue
                             netuid = int(netuid_input)
                             break
                         except ValueError:
-                            print("Invalid netuid. Please enter a number.")
+                            print(f"{Colors.RED}Invalid netuid. Please enter a number.{Colors.RESET}")
                 except KeyboardInterrupt:
-                    print("\n\nCancelled. Returning to main menu...\n")
+                    print(f"\n\n{Colors.YELLOW}Cancelled. Returning to main menu...{Colors.RESET}\n")
                     continue
                 
                 # Get amount
@@ -173,41 +189,41 @@ def main():
                         # For unstake, allow empty input to unstake all
                         while True:
                             try:
-                                amount_input = input("Enter amount (TAO) (press Enter to unstake all): ").strip()
+                                amount_input = input(f"{Colors.YELLOW}Enter amount (TAO) (press Enter to unstake all):{Colors.RESET} ").strip()
                                 if not amount_input:
                                     # Empty input means unstake all
                                     amount = None
                                     break
                                 amount = float(amount_input)
                                 if amount <= 0:
-                                    print("Amount must be greater than 0.")
+                                    print(f"{Colors.RED}Amount must be greater than 0.{Colors.RESET}")
                                     continue
                                 break
                             except ValueError:
-                                print("Invalid amount. Please enter a number.")
+                                print(f"{Colors.RED}Invalid amount. Please enter a number.{Colors.RESET}")
                     else:
                         # For stake, require an amount
                         while True:
                             try:
-                                amount_input = input("Enter amount (TAO): ").strip()
+                                amount_input = input(f"{Colors.YELLOW}Enter amount (TAO):{Colors.RESET} ").strip()
                                 if not amount_input:
                                     continue
                                 amount = float(amount_input)
                                 if amount <= 0:
-                                    print("Amount must be greater than 0.")
+                                    print(f"{Colors.RED}Amount must be greater than 0.{Colors.RESET}")
                                     continue
                                 break
                             except ValueError:
-                                print("Invalid amount. Please enter a number.")
+                                print(f"{Colors.RED}Invalid amount. Please enter a number.{Colors.RESET}")
                 except KeyboardInterrupt:
-                    print("\n\nCancelled. Returning to main menu...\n")
+                    print(f"\n\n{Colors.YELLOW}Cancelled. Returning to main menu...{Colors.RESET}\n")
                     continue
             
             # Execute operation
             if amount is None:
-                print(f"\n{action}ing all available TAO from netuid {netuid}...\n")
+                print(f"\n{Colors.CYAN}{Colors.BOLD}{action}ing all available TAO from netuid {netuid}...{Colors.RESET}\n")
             else:
-                print(f"\n{action}ing {amount} TAO to netuid {netuid}...\n")
+                print(f"\n{Colors.CYAN}{Colors.BOLD}{action}ing {amount} TAO to netuid {netuid}...{Colors.RESET}\n")
             
             if action_lower == "stake":
                 result = stake_service.stake(
@@ -234,16 +250,16 @@ def main():
             save_last_action(last_action)
             
             if result.get("success"):
-                print(f"✓ {action} successful!\n")
+                print(f"{Colors.GREEN}✓ {action} successful!{Colors.RESET}\n")
             else:
                 error_msg = result.get("error", "Unknown error")
-                print(f"✗ {action} failed: {error_msg}\n")
+                print(f"{Colors.RED}✗ {action} failed: {error_msg}{Colors.RESET}\n")
             
     except KeyboardInterrupt:
         # Only exit if Ctrl+C is pressed when not in any prompt
-        print("\n\nExiting program...\n")
+        print(f"\n\n{Colors.CYAN}Exiting program...{Colors.RESET}\n")
     except Exception as e:
-        print(f"\nError: {e}\n")
+        print(f"\n{Colors.RED}Error: {e}{Colors.RESET}\n")
 
 
 if __name__ == "__main__":
