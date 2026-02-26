@@ -31,7 +31,8 @@ def select_from_list(prompt, options, default_index=0):
         except ValueError:
             print("Invalid input. Please enter a number.")
         except KeyboardInterrupt:
-            return None
+            # Re-raise to be caught by outer handler
+            raise
 
 
 def main():
@@ -55,11 +56,15 @@ def main():
                 wallet_selection_list.append(repeat_option)
             
             # Select wallet (default: second wallet, index 1)
-            selected = select_from_list("Select Wallet:", wallet_selection_list, default_index=1)
+            try:
+                selected = select_from_list("Select Wallet:", wallet_selection_list, default_index=1)
+            except KeyboardInterrupt:
+                print("\n\nCancelled. Returning to main menu...\n")
+                continue
             
             if selected is None:
-                print("\nExiting...")
-                return
+                print("\nCancelled. Returning to main menu...\n")
+                continue
             
             # Check if "Repeat last action" was selected
             if selected == repeat_option and last_action:
@@ -82,57 +87,69 @@ def main():
                 print(f"\nUsing wallet: {wallet_name}\n")
 
                 # Select action (Stake or Unstake, default: Stake)
-                action = select_from_list("Select Action:", action_options, default_index=0)
+                try:
+                    action = select_from_list("Select Action:", action_options, default_index=0)
+                except KeyboardInterrupt:
+                    print("\n\nCancelled. Returning to main menu...\n")
+                    continue
                 
                 if action is None:
-                    print("\nExiting...")
-                    break
+                    print("\nCancelled. Returning to main menu...\n")
+                    continue
                 
                 action_lower = action.lower()
                 
                 # Get netuid
-                while True:
-                    netuid_input = input("\nEnter netuid: ").strip()
-                    if not netuid_input:
-                        continue
-                    try:
-                        netuid = int(netuid_input)
-                        break
-                    except ValueError:
-                        print("Invalid netuid. Please enter a number.")
+                try:
+                    while True:
+                        try:
+                            netuid_input = input("\nEnter netuid: ").strip()
+                            if not netuid_input:
+                                continue
+                            netuid = int(netuid_input)
+                            break
+                        except ValueError:
+                            print("Invalid netuid. Please enter a number.")
+                except KeyboardInterrupt:
+                    print("\n\nCancelled. Returning to main menu...\n")
+                    continue
                 
                 # Get amount
                 amount = None
-                if action_lower == "unstake":
-                    # For unstake, allow empty input to unstake all
-                    while True:
-                        amount_input = input("Enter amount (TAO) (press Enter to unstake all): ").strip()
-                        if not amount_input:
-                            # Empty input means unstake all
-                            amount = None
-                            break
-                        try:
-                            amount = float(amount_input)
-                            if amount <= 0:
-                                print("Amount must be greater than 0.")
-                                continue
-                            break
-                        except ValueError:
-                            print("Invalid amount. Please enter a number.")
-                else:
-                    # For stake, require an amount
-                    while True:
-                        amount_input = input("Enter amount (TAO): ").strip()
-                        if not amount_input:
-                            continue
-                        try:
-                            amount = float(amount_input)
-                            if amount <= 0:
-                                print("Amount must be greater than 0.")
-                                continue
-                            break
-                        except ValueError:
-                            print("Invalid amount. Please enter a number.")
+                try:
+                    if action_lower == "unstake":
+                        # For unstake, allow empty input to unstake all
+                        while True:
+                            try:
+                                amount_input = input("Enter amount (TAO) (press Enter to unstake all): ").strip()
+                                if not amount_input:
+                                    # Empty input means unstake all
+                                    amount = None
+                                    break
+                                amount = float(amount_input)
+                                if amount <= 0:
+                                    print("Amount must be greater than 0.")
+                                    continue
+                                break
+                            except ValueError:
+                                print("Invalid amount. Please enter a number.")
+                    else:
+                        # For stake, require an amount
+                        while True:
+                            try:
+                                amount_input = input("Enter amount (TAO): ").strip()
+                                if not amount_input:
+                                    continue
+                                amount = float(amount_input)
+                                if amount <= 0:
+                                    print("Amount must be greater than 0.")
+                                    continue
+                                break
+                            except ValueError:
+                                print("Invalid amount. Please enter a number.")
+                except KeyboardInterrupt:
+                    print("\n\nCancelled. Returning to main menu...\n")
+                    continue
             
             # Execute operation
             if amount is None:
@@ -168,7 +185,8 @@ def main():
                 print(f"✗ {action} failed: {error_msg}\n")
             
     except KeyboardInterrupt:
-        print("\n\nExiting...\n")
+        # Only exit if Ctrl+C is pressed when not in any prompt
+        print("\n\nExiting program...\n")
     except Exception as e:
         print(f"\nError: {e}\n")
 
