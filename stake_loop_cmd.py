@@ -43,71 +43,96 @@ def main():
     
     wallet_list = list(wallets.keys())
     action_options = ["Stake", "Unstake"]
+    last_action = None  # Store last action: {wallet_name, action, netuid, amount}
     
     try:
         # Main loop
         while True:
-            # Select wallet (default: first wallet)
-            wallet_name = select_from_list("Select Wallet:", wallet_list, default_index=1)
+            # Build wallet selection list with "Repeat last action" option
+            wallet_selection_list = wallet_list.copy()
+            repeat_option = "Repeat last action"
+            if last_action:
+                wallet_selection_list.append(repeat_option)
             
-            if wallet_name is None:
+            # Select wallet (default: second wallet, index 1)
+            selected = select_from_list("Select Wallet:", wallet_selection_list, default_index=1)
+            
+            if selected is None:
                 print("\nExiting...")
                 return
             
-            print(f"\nUsing wallet: {wallet_name}\n")
-
-            # Select action (Stake or Unstake, default: Stake)
-            action = select_from_list("Select Action:", action_options, default_index=0)
-            
-            if action is None:
-                print("\nExiting...")
-                break
-            
-            action_lower = action.lower()
-            
-            # Get netuid
-            while True:
-                netuid_input = input("\nEnter netuid: ").strip()
-                if not netuid_input:
-                    continue
-                try:
-                    netuid = int(netuid_input)
-                    break
-                except ValueError:
-                    print("Invalid netuid. Please enter a number.")
-            
-            # Get amount
-            amount = None
-            if action_lower == "unstake":
-                # For unstake, allow empty input to unstake all
-                while True:
-                    amount_input = input("Enter amount (TAO) (press Enter to unstake all): ").strip()
-                    if not amount_input:
-                        # Empty input means unstake all
-                        amount = None
-                        break
-                    try:
-                        amount = float(amount_input)
-                        if amount <= 0:
-                            print("Amount must be greater than 0.")
-                            continue
-                        break
-                    except ValueError:
-                        print("Invalid amount. Please enter a number.")
+            # Check if "Repeat last action" was selected
+            if selected == repeat_option and last_action:
+                wallet_name = last_action["wallet_name"]
+                action = last_action["action"]
+                netuid = last_action["netuid"]
+                amount = last_action["amount"]
+                action_lower = action.lower()
+                
+                print(f"\nRepeating last action:")
+                print(f"Wallet: {wallet_name}")
+                print(f"Action: {action}")
+                print(f"Netuid: {netuid}")
+                if amount is None:
+                    print(f"Amount: All available\n")
+                else:
+                    print(f"Amount: {amount} TAO\n")
             else:
-                # For stake, require an amount
+                wallet_name = selected
+                print(f"\nUsing wallet: {wallet_name}\n")
+
+                # Select action (Stake or Unstake, default: Stake)
+                action = select_from_list("Select Action:", action_options, default_index=0)
+                
+                if action is None:
+                    print("\nExiting...")
+                    break
+                
+                action_lower = action.lower()
+                
+                # Get netuid
                 while True:
-                    amount_input = input("Enter amount (TAO): ").strip()
-                    if not amount_input:
+                    netuid_input = input("\nEnter netuid: ").strip()
+                    if not netuid_input:
                         continue
                     try:
-                        amount = float(amount_input)
-                        if amount <= 0:
-                            print("Amount must be greater than 0.")
-                            continue
+                        netuid = int(netuid_input)
                         break
                     except ValueError:
-                        print("Invalid amount. Please enter a number.")
+                        print("Invalid netuid. Please enter a number.")
+                
+                # Get amount
+                amount = None
+                if action_lower == "unstake":
+                    # For unstake, allow empty input to unstake all
+                    while True:
+                        amount_input = input("Enter amount (TAO) (press Enter to unstake all): ").strip()
+                        if not amount_input:
+                            # Empty input means unstake all
+                            amount = None
+                            break
+                        try:
+                            amount = float(amount_input)
+                            if amount <= 0:
+                                print("Amount must be greater than 0.")
+                                continue
+                            break
+                        except ValueError:
+                            print("Invalid amount. Please enter a number.")
+                else:
+                    # For stake, require an amount
+                    while True:
+                        amount_input = input("Enter amount (TAO): ").strip()
+                        if not amount_input:
+                            continue
+                        try:
+                            amount = float(amount_input)
+                            if amount <= 0:
+                                print("Amount must be greater than 0.")
+                                continue
+                            break
+                        except ValueError:
+                            print("Invalid amount. Please enter a number.")
             
             # Execute operation
             if amount is None:
@@ -127,6 +152,14 @@ def main():
                     wallet_name=wallet_name,
                     amount=amount,
                 )
+            
+            # Store the last action (regardless of success or failure)
+            last_action = {
+                "wallet_name": wallet_name,
+                "action": action,
+                "netuid": netuid,
+                "amount": amount
+            }
             
             if result.get("success"):
                 print(f"✓ {action} successful!\n")
