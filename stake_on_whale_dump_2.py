@@ -27,7 +27,7 @@ SUBNET_CONFIG = {
     125: (0.007, 115),  # If 125's price < 0.007, stake to 115
 }
 
-STAKE_AMOUNT = 10.0  # TAO
+STAKE_AMOUNT = 120.0  # TAO
 
 settings.DEFAULT_MIN_TOLERANCE = True
 settings.TOLERANCE_OFFSET = "*1.2"
