@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Script to stake 100 TAO to subnets when their prices drop below thresholds:
-- SN 101: price < 0.003
-- SN 115: price < 0.005
-- SN 125: price < 0.007
+Script to unstake TAO from subnets when their prices rise above thresholds:
+- SN 101: threshold 0.005
+- SN 115: threshold 0.01
+- SN 125: threshold 0.01
 """
 
 import sys
@@ -22,19 +22,17 @@ from app.services.wallets import wallets
 
 # Subnet thresholds
 SUBNET_THRESHOLDS = {
-    101: 0.0035,
-    115: 0.007,
-    125: 0.007,
+    101: 0.005,
+    115: 0.01,
+    125: 0.01,
 }
-
-STAKE_AMOUNT = 120.0  # TAO
 
 settings.DEFAULT_MIN_TOLERANCE = True
 settings.TOLERANCE_OFFSET = "*1.2"
 settings.USE_ERA = True
 
-def check_and_stake(subnet_info, netuid, threshold, wallet_name, subtensor):
-    """Check if subnet price is alpha token price below threshold and stake if so."""
+def check_and_unstake(subnet_info, netuid, threshold, wallet_name, subtensor):
+    """Check subnet price and unstake if price is above threshold."""
     if subnet_info is None:
         print(f"Subnet {netuid} does not exist, skipping...")
         return False
@@ -46,43 +44,45 @@ def check_and_stake(subnet_info, netuid, threshold, wallet_name, subtensor):
         print(f"Error getting price for subnet {netuid}: {e}")
         return False
     
-    if alpha_price < bt.Balance.from_tao(threshold):
-        print(f"Subnet {netuid} price {alpha_price} TAO is below threshold {threshold} TAO. Staking {STAKE_AMOUNT} TAO...")
+    if alpha_price >= bt.Balance.from_tao(threshold):
+        # Price is above threshold - unstake if there's any stake
+        print(f"Subnet {netuid} price {alpha_price} TAO is above threshold {threshold} TAO.")
         
-        result = stake_service.stake(
-            tao_amount=STAKE_AMOUNT,
+        result = stake_service.unstake_not_limit(
             netuid=netuid,
             wallet_name=wallet_name,
+            amount=None,  # Unstake all
         )
         
         if result.get("success"):
-            print(f"✓ Successfully staked {STAKE_AMOUNT} TAO to subnet {netuid}")
+            print(f"✓ Successfully unstaked from subnet {netuid}")
             return True
         else:
             error_msg = result.get("error", "Unknown error")
-            print(f"✗ Failed to stake to subnet {netuid}: {error_msg}")
+            print(f"✗ Failed to unstake from subnet {netuid}: {error_msg}")
             return False
     else:
-        print(f"Subnet {netuid} price {alpha_price} TAO is above threshold {threshold} TAO. No action taken.")
+        print(f"Subnet {netuid} price {alpha_price} TAO is below threshold {threshold} TAO. No action taken.")
         subtensor.wait_for_block()
         return False
 
 
 def main():
-    """Main function to continuously monitor prices and stake when conditions are met."""
+    """Main function to continuously monitor prices and unstake when thresholds are exceeded."""
     if not wallets:
         print("No wallets available. Please check configuration.")
         return
     
     # Use the first available wallet (or you can modify to select a specific one)
-    wallet_name = list(wallets.keys())[0]
+    wallet_index = int(input("Enter the wallet index: "))
+    wallet_name = list(wallets.keys())[wallet_index]
     print(f"Using wallet: {wallet_name}")
     
     subtensor = bt.Subtensor(network=settings.NETWORK)
     
-    print("Monitoring subnet prices and staking if thresholds are met...")
+    print("Monitoring subnet prices and unstaking when price > threshold...")
     print(f"Thresholds: {SUBNET_THRESHOLDS}")
-    print(f"Stake amount: {STAKE_AMOUNT} TAO")
+    print("Will unstake when price >= threshold")
     print("Press Ctrl+C to stop the script\n")
     
     
@@ -94,14 +94,13 @@ def main():
                 
                 # Check each subnet
                 for netuid, threshold in SUBNET_THRESHOLDS.items():
-                    # Skip if already staked to this subnet in this session
-                    
                     try:
-                        check_and_stake(subnet_infos[netuid], netuid, threshold, wallet_name, subtensor)
+                        check_and_unstake(subnet_infos[netuid], netuid, threshold, wallet_name, subtensor)
                         print(f"\n{'='*60}\n")
                     except Exception as e:
                         print(f"Error processing subnet {netuid}: {e}")
                         continue
+                print()
                 
             except KeyboardInterrupt:
                 print("\n\nExiting...")

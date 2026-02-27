@@ -33,7 +33,7 @@ settings.DEFAULT_MIN_TOLERANCE = True
 settings.TOLERANCE_OFFSET = "*1.2"
 settings.USE_ERA = True
 
-def check_and_cross_stake(subnet_info, monitor_netuid, threshold, stake_to_netuid, wallet_name):
+def check_and_cross_stake(subnet_info, monitor_netuid, threshold, stake_to_netuid, wallet_name, subtensor):
     """Check if subnet price is below threshold and stake to the cross-subnet if so."""
     if subnet_info is None:
         print(f"Subnet {monitor_netuid} does not exist, skipping...")
@@ -64,6 +64,7 @@ def check_and_cross_stake(subnet_info, monitor_netuid, threshold, stake_to_netui
             print(f"✗ Failed to stake to subnet {stake_to_netuid}: {error_msg}")
             return False
     else:
+        subtensor.wait_for_block()
         print(f"Subnet {monitor_netuid} price {alpha_price} TAO is above threshold {threshold} TAO. No action taken.")
         return False
 
@@ -102,17 +103,13 @@ def main():
                             monitor_netuid, 
                             threshold, 
                             stake_to_netuid, 
-                            wallet_name
+                            wallet_name,
+                            subtensor
                         )
                         print(f"\n{'='*60}\n")
                     except Exception as e:
                         print(f"Error processing subnet {monitor_netuid}: {e}")
                         continue
-                
-                # Wait for next block before checking again
-                print("\nWaiting for next block...")
-                subtensor.wait_for_block()
-                print()
                 
             except KeyboardInterrupt:
                 print("\n\nExiting...")
