@@ -22,12 +22,12 @@ from app.services.wallets import wallets
 
 # Subnet thresholds
 SUBNET_THRESHOLDS = {
-    101: 0.005,
-    # 115: 0.005,
-    # 125: 0.007,
+    101: 0.0035,
+    115: 0.007,
+    125: 0.007,
 }
 
-STAKE_AMOUNT = 10.0  # TAO
+STAKE_AMOUNT = 120.0  # TAO
 
 settings.DEFAULT_MIN_TOLERANCE = True
 settings.TOLERANCE_OFFSET = "*1.2"

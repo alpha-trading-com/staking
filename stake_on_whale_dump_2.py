@@ -22,9 +22,9 @@ from app.services.wallets import wallets
 # Subnet thresholds and cross-staking targets
 # Format: {monitor_netuid: (threshold, stake_to_netuid)}
 SUBNET_CONFIG = {
-    101: (0.005, 115),  # If 101's price < 0.005, stake to 115
-    125: (0.005, 115),  # If 125's price < 0.005, stake to 115
-    115: (0.005, 101),  # If 115's price < 0.005, stake to 101
+    101: (0.0035, 115),  # If 101's price < 0.0035, stake to 115
+    115: (0.007, 101),  # If 115's price < 0.007, stake to 101
+    125: (0.007, 115),  # If 125's price < 0.007, stake to 115
 }
 
 STAKE_AMOUNT = 10.0  # TAO
