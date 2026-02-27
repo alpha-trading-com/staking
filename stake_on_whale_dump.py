@@ -29,8 +29,7 @@ SUBNET_THRESHOLDS = {
 
 STAKE_AMOUNT = 10.0  # TAO
 
-settings.DEFAULT_RATE_TOLERANCE = 0.005
-settings.DEFAULT_MIN_TOLERANCE = False
+settings.DEFAULT_MIN_TOLERANCE = True
 settings.TOLERANCE_OFFSET = "*1.2"
 settings.USE_ERA = True
 

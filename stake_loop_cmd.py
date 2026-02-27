@@ -16,6 +16,10 @@ LAST_ACTION_FILE = Path(__file__).parent / "last_action.json"
 DEFAULT_WAIT_FOR_INCLUSION = False
 DEFAULT_WAIT_FOR_FINALIZATION = False
 
+settings.DEFAULT_MIN_TOLERANCE = True
+settings.TOLERANCE_OFFSET = "*1.2"
+settings.USE_ERA = True
+
 # ANSI color codes
 class Colors:
     RESET = '\033[0m'
