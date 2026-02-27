@@ -33,7 +33,6 @@ settings.DEFAULT_MIN_TOLERANCE = True
 settings.TOLERANCE_OFFSET = "*1.2"
 settings.USE_ERA = True
 
-print(f"Tolerance offset: {settings.TOLERANCE_OFFSET}")
 def check_and_stake(subnet_info, netuid, threshold, wallet_name):
     """Check if subnet price is alpha token price below threshold and stake if so."""
     if subnet_info is None:
