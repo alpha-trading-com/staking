@@ -33,14 +33,25 @@ def stake(
     tao_amount: float,
     netuid: int,
     wallet_name: str,
-    dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
-    rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
-    min_tolerance_staking: bool = settings.DEFAULT_MIN_TOLERANCE,
+    dest_hotkey: Optional[str] = None,
+    rate_tolerance: Optional[float] = None,
+    min_tolerance_staking: Optional[bool] = None,
     allow_partial: bool = False,
-    retries: int = settings.DEFAULT_RETRIES,
-    use_era: bool = settings.USE_ERA,
+    retries: Optional[int] = None,
+    use_era: Optional[bool] = None,
     username: str = Depends(get_current_username)
 ):
+    if dest_hotkey is None:
+        dest_hotkey = settings.DEFAULT_DEST_HOTKEY
+    if rate_tolerance is None:
+        rate_tolerance = settings.DEFAULT_RATE_TOLERANCE
+    if min_tolerance_staking is None:
+        min_tolerance_staking = settings.DEFAULT_MIN_TOLERANCE
+    if retries is None:
+        retries = settings.DEFAULT_RETRIES
+    if use_era is None:
+        use_era = settings.USE_ERA
+    
     # Validate retries parameter
     if retries < 1:
         retries = 1    
@@ -80,14 +91,25 @@ def unstake(
     netuid: int,
     wallet_name: str,
     amount: Optional[float] = None,
-    dest_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
-    rate_tolerance: float = settings.DEFAULT_RATE_TOLERANCE,
-    min_tolerance_unstaking: bool = settings.DEFAULT_MIN_TOLERANCE,
+    dest_hotkey: Optional[str] = None,
+    rate_tolerance: Optional[float] = None,
+    min_tolerance_unstaking: Optional[bool] = None,
     allow_partial: bool = False,
-    retries: int = settings.DEFAULT_RETRIES,
-    use_era: bool = settings.USE_ERA,
+    retries: Optional[int] = None,
+    use_era: Optional[bool] = None,
     username: str = Depends(get_current_username)
 ):
+    if dest_hotkey is None:
+        dest_hotkey = settings.DEFAULT_DEST_HOTKEY
+    if rate_tolerance is None:
+        rate_tolerance = settings.DEFAULT_RATE_TOLERANCE
+    if min_tolerance_unstaking is None:
+        min_tolerance_unstaking = settings.DEFAULT_MIN_TOLERANCE
+    if retries is None:
+        retries = settings.DEFAULT_RETRIES
+    if use_era is None:
+        use_era = settings.USE_ERA
+    
     # Validate retries parameter
     if retries < 1:
         retries = 1    
@@ -127,12 +149,21 @@ def move_stake(
     origin_netuid: int, 
     destination_netuid: int,
     amount: Optional[float] = None,
-    origin_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
-    destination_hotkey: str = settings.DEFAULT_DEST_HOTKEY,
-    retries: int = settings.DEFAULT_RETRIES,
-    use_era: bool = settings.USE_ERA,
+    origin_hotkey: Optional[str] = None,
+    destination_hotkey: Optional[str] = None,
+    retries: Optional[int] = None,
+    use_era: Optional[bool] = None,
     username: str = Depends(get_current_username)
 ):
+    if origin_hotkey is None:
+        origin_hotkey = settings.DEFAULT_DEST_HOTKEY
+    if destination_hotkey is None:
+        destination_hotkey = settings.DEFAULT_DEST_HOTKEY
+    if retries is None:
+        retries = settings.DEFAULT_RETRIES
+    if use_era is None:
+        use_era = settings.USE_ERA
+    
     # Validate retries parameter
     if retries < 1:
         retries = 1    

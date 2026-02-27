@@ -89,7 +89,7 @@ def calculate_stake_limit_price(
     min_tolerance_staking: bool,
     default_rate_tolerance: float,
     subtensor: Optional[bt.Subtensor] = None,
-    tolerance_offset: Union[float, str] = settings.TOLERANCE_OFFSET
+    tolerance_offset: Optional[Union[float, str]] = None
 ) -> int:
     """
     Calculate the rate tolerance for staking operations.
@@ -104,10 +104,14 @@ def calculate_stake_limit_price(
         min_tolerance_staking: Whether to use minimum tolerance
         default_rate_tolerance: Default tolerance value to use if not using min tolerance
         subtensor: Optional Subtensor instance. If not provided, creates one using settings.NETWORK
+        tolerance_offset: Tolerance offset value
         
     Returns:
         int: Limit price value
     """
+    if tolerance_offset is None:
+        tolerance_offset = settings.TOLERANCE_OFFSET
+    print(f"Tolerance offset: {tolerance_offset}")
     if netuid == 0:
         return TAO_TO_RAO + 1
 
@@ -121,6 +125,8 @@ def calculate_stake_limit_price(
     subnet = subtensor.subnet(netuid=netuid)
 
     tolerance = default_rate_tolerance
+    print(f"Tolerance: {tolerance}")
+    print(min_tolerance_staking)
     if min_tolerance_staking:
         deviation = subnet.price.tao - subnet.tao_in.tao / subnet.alpha_in.tao      
         sim_swap_result = sim_swap(subtensor, 0, netuid, tao_amount)
@@ -134,6 +140,8 @@ def calculate_stake_limit_price(
         if isinstance(tolerance_offset, str) and tolerance_offset.startswith('*'):
             multiplier = float(tolerance_offset[1:])
             tolerance = min_tolerance * multiplier
+            print(f"Multiplier: {multiplier}")
+            print(f"Tolerance: {tolerance}")
         else:
             tolerance = min_tolerance + float(tolerance_offset)
   
@@ -153,7 +161,7 @@ def calculate_unstake_limit_price(
     min_tolerance_unstaking: bool,
     default_rate_tolerance: float,
     subtensor: Optional[bt.Subtensor] = None,
-    tolerance_offset: Union[float, str]  = settings.TOLERANCE_OFFSET
+    tolerance_offset: Optional[Union[float, str]] = None
 ) -> int:
     """
     Calculate the rate tolerance for unstaking operations.
@@ -172,6 +180,8 @@ def calculate_unstake_limit_price(
     Returns:
         int: Limit price value
     """
+    if tolerance_offset is None:
+        tolerance_offset = settings.TOLERANCE_OFFSET
 
     if netuid == 0:
         return 1
