@@ -24,7 +24,6 @@ from app.services.wallets import wallets
 SUBNET_THRESHOLDS = {
     101: 0.006,
     115: 0.012,
-    125: 0.012,
 }
 
 settings.DEFAULT_MIN_TOLERANCE = True
@@ -48,9 +47,12 @@ def check_and_unstake(subnet_info, netuid, threshold, wallet_name, subtensor):
         # Price is above threshold - unstake if there's any stake
         print(f"Subnet {netuid} price {alpha_price} TAO is above threshold {threshold} TAO.")
         
-        result = stake_service.unstake_not_limit(
-            netuid=netuid,
+
+
+        result = stake_service.move_stake(
             wallet_name=wallet_name,
+            origin_netuid=netuid,
+            destination_netuid=0,
             amount=None,  # Unstake all
         )
         
