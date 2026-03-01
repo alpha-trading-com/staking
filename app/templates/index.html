@@ -335,7 +335,7 @@
                         <button onclick="stake()" class="btn">Stake</button>
                         <button type="button" onclick="copyStakeCommand()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap; background: #10b981;">Copy Cmd</button>
                         <button type="button" onclick="calculateAndSetMinTolerance()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap;">Calculate Min Tolerance</button>
-                        <input type="checkbox" id="minToleranceStaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleRateTolerance()">
+                        <input type="checkbox" id="minToleranceStaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleRateTolerance()" checked>
                         <label for="minToleranceStaking" class="text-sm text-red-500 mb-0">Use Min Tolerance</label>
                         <input type="checkbox" id="allowPartialStaking" class="form-checkbox h-4 w-4 text-blue-600">
                         <label for="allowPartialStaking" class="text-sm text-red-500 mb-0">Allow Partial Staking</label>
@@ -376,7 +376,7 @@
                 <div class="input-group">
                     <label class="input-label">Rate Tolerance</label>
                     <div class="flex items-center gap-3">
-                        <input type="text" id="unstakeRateTolerance" class="input-field flex-1" value="0.5" step="0.0001">
+                        <input type="text" id="unstakeRateTolerance" class="input-field flex-1" value="2" step="0.0001">
                         <button onclick="unstake()" class="btn btn-danger">Unstake</button>
                         <button type="button" onclick="copyUnstakeCommand()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap; background: #10b981;">Copy Cmd</button>
                         <input type="checkbox" id="minToleranceUnstaking" class="form-checkbox h-4 w-4 text-blue-600" onchange="toggleUnstakeRateTolerance()">
