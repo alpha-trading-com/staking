@@ -23,7 +23,7 @@ from app.services.wallets import wallets
 # Subnet thresholds
 SUBNET_THRESHOLDS = {
     101: 0.006,
-    115: 0.012,
+    115: 0.014,
 }
 
 settings.DEFAULT_MIN_TOLERANCE = True
