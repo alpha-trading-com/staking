@@ -1333,14 +1333,35 @@
             });
             
             // Auto-check min tolerance checkbox every 2 minutes if it's unchecked
-            setInterval(function() {
-                const minToleranceCheckbox = document.getElementById('minToleranceStaking');
-                if (minToleranceCheckbox && !minToleranceCheckbox.checked) {
-                    minToleranceCheckbox.checked = true;
-                    toggleRateTolerance();
-                    saveInputs(); // Save the change
+            let minToleranceInterval = null;
+            
+            function startMinToleranceInterval() {
+                // Clear existing interval if any
+                if (minToleranceInterval) {
+                    clearInterval(minToleranceInterval);
                 }
-            }, 120000); // 2 minutes = 120000 milliseconds
+                
+                // Start new interval
+                minToleranceInterval = setInterval(function() {
+                    const minToleranceCheckbox = document.getElementById('minToleranceStaking');
+                    if (minToleranceCheckbox && !minToleranceCheckbox.checked) {
+                        minToleranceCheckbox.checked = true;
+                        toggleRateTolerance();
+                        saveInputs(); // Save the change
+                    }
+                }, 120000); // 2 minutes = 120000 milliseconds
+            }
+            
+            // Start the interval initially
+            startMinToleranceInterval();
+            
+            // Restart interval when checkbox is manually changed
+            const minToleranceCheckbox = document.getElementById('minToleranceStaking');
+            if (minToleranceCheckbox) {
+                minToleranceCheckbox.addEventListener('change', function() {
+                    startMinToleranceInterval(); // Restart the interval
+                });
+            }
         });
     </script>
 </body>
