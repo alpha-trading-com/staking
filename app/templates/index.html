@@ -1347,6 +1347,11 @@
                     if (minToleranceCheckbox && !minToleranceCheckbox.checked) {
                         minToleranceCheckbox.checked = true;
                         toggleRateTolerance();
+                        // Set rate tolerance input to 0.5 when auto-checking
+                        const rateToleranceInput = document.getElementById('rateTolerance');
+                        if (rateToleranceInput) {
+                            rateToleranceInput.value = '0.5';
+                        }
                         saveInputs(); // Save the change
                     }
                 }, 120000); // 2 minutes = 120000 milliseconds
