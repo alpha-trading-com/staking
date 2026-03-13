@@ -1431,7 +1431,10 @@
         // Current active wallet - will be initialized on page load
         let currentWallet = null;
         
-        // Switch wallet (without refreshing)
+        // Cache for stake info by wallet name
+        const stakeInfoCache = {};
+        
+        // Switch wallet (show cached data if available)
         function switchWallet(walletName) {
             currentWallet = walletName;
             
@@ -1446,10 +1449,54 @@
                 activeTab.classList.add('wallet-tab-active');
             }
             
-            // Don't refresh - user needs to click refresh button manually
+            // Display cached data if available, otherwise show empty state
+            if (stakeInfoCache[walletName]) {
+                displayStakeInfo(stakeInfoCache[walletName]);
+            } else {
+                const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+                const contentDiv = document.getElementById('stakeInfoContent');
+                contentDiv.innerHTML = refreshButtonHtml + '<div style="text-align: center; color: #9ca3af; padding: 2rem;">No data loaded. Click Refresh to load stake info.</div>';
+            }
         }
         
-        // Fetch and display stake info
+        // Display stake info (helper function)
+        function displayStakeInfo(data) {
+            const contentDiv = document.getElementById('stakeInfoContent');
+            const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+            
+            let html = refreshButtonHtml + '<table class="stake-table">';
+            html += '<thead><tr><th>NetUID</th><th>Value (TAO)</th><th>Stake (Alpha)</th><th>Price</th><th>Hotkey</th><th>Action</th></tr></thead>';
+            html += '<tbody>';
+            
+            if (data.stakes && data.stakes.length > 0) {
+                data.stakes.forEach(stake => {
+                    html += `<tr>
+                        <td>${stake.netuid}</td>
+                        <td>${stake.value_tao}</td>
+                        <td>${stake.stake_alpha}</td>
+                        <td>${stake.price}</td>
+                        <td style="font-family: monospace; font-size: 0.8rem;">${stake.hotkey}</td>
+                        <td><button class="btn btn-danger" onclick="unstakeFromTable(${stake.netuid}, '${stake.hotkey}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Unstake</button></td>
+                    </tr>`;
+                });
+            } else {
+                html += '<tr><td colspan="6" style="text-align: center; color: #9ca3af; padding: 2rem;">No stakes found</td></tr>';
+            }
+            
+            html += '</tbody></table>';
+            
+            // Add wallet info
+            html += `<div class="wallet-info">
+                <div class="wallet-info-item"><span class="wallet-info-label">Coldkey SS58:</span>${data.wallet.coldkey_ss58}</div>
+                <div class="wallet-info-item"><span class="wallet-info-label">Free Balance:</span>${data.wallet.free_balance}</div>
+                <div class="wallet-info-item"><span class="wallet-info-label">Total Staked Value:</span>${data.wallet.total_staked_value}</div>
+                <div class="wallet-info-item"><span class="wallet-info-label">Total Value:</span>${data.wallet.total_value}</div>
+            </div>`;
+            
+            contentDiv.innerHTML = html;
+        }
+        
+        // Fetch and display stake info (and cache it)
         async function refreshStakeInfo() {
             const contentDiv = document.getElementById('stakeInfoContent');
             
@@ -1471,36 +1518,11 @@
                     throw new Error(data.error || 'Failed to fetch stake info');
                 }
                 
-                let html = refreshButtonHtml + '<table class="stake-table">';
-                html += '<thead><tr><th>NetUID</th><th>Value (TAO)</th><th>Stake (Alpha)</th><th>Price</th><th>Hotkey</th><th>Action</th></tr></thead>';
-                html += '<tbody>';
+                // Cache the data for this wallet
+                stakeInfoCache[currentWallet] = data;
                 
-                if (data.stakes && data.stakes.length > 0) {
-                    data.stakes.forEach(stake => {
-                        html += `<tr>
-                            <td>${stake.netuid}</td>
-                            <td>${stake.value_tao}</td>
-                            <td>${stake.stake_alpha}</td>
-                            <td>${stake.price}</td>
-                            <td style="font-family: monospace; font-size: 0.8rem;">${stake.hotkey}</td>
-                            <td><button class="btn btn-danger" onclick="unstakeFromTable(${stake.netuid}, '${stake.hotkey}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Unstake</button></td>
-                        </tr>`;
-                    });
-                } else {
-                    html += '<tr><td colspan="6" style="text-align: center; color: #9ca3af; padding: 2rem;">No stakes found</td></tr>';
-                }
-                
-                html += '</tbody></table>';
-                
-                // Add wallet info
-                html += `<div class="wallet-info">
-                    <div class="wallet-info-item"><span class="wallet-info-label">Coldkey SS58:</span>${data.wallet.coldkey_ss58}</div>
-                    <div class="wallet-info-item"><span class="wallet-info-label">Free Balance:</span>${data.wallet.free_balance}</div>
-                    <div class="wallet-info-item"><span class="wallet-info-label">Total Staked Value:</span>${data.wallet.total_staked_value}</div>
-                    <div class="wallet-info-item"><span class="wallet-info-label">Total Value:</span>${data.wallet.total_value}</div>
-                </div>`;
-                
-                contentDiv.innerHTML = html;
+                // Display the data
+                displayStakeInfo(data);
             } catch (error) {
                 contentDiv.innerHTML = refreshButtonHtml + `<div style="text-align: center; color: #ef4444; padding: 2rem;">Error loading stake info: ${error.message}</div>`;
             }
