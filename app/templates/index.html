@@ -1518,7 +1518,7 @@
                         <td>${stake.stake_alpha}</td>
                         <td>${stake.price}</td>
                         <td style="font-family: monospace; font-size: 0.8rem;">${stake.hotkey}</td>
-                        <td><button class="btn btn-danger" onclick="unstakeFromTable(${stake.netuid}, '${stake.hotkey}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Unstake</button></td>
+                        <td><button class="btn btn-danger" data-netuid="${stake.netuid}" data-hotkey="${escapeHtml(stake.hotkey)}" onclick="unstakeFromTable(this)" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Unstake</button></td>
                     </tr>`;
                 });
             } else {
@@ -1571,13 +1571,44 @@
             }
         }
         
-        // Unstake from table
-        function unstakeFromTable(netuid, hotkey) {
-            // Switch to unstake tab and populate fields
-            showTab('unstake');
-            document.getElementById('unstakeNetuid').value = netuid;
-            document.getElementById('unstakeValidatorHotkey').value = hotkey;
-            saveInputs();
+        // Unstake from table (immediate)
+        async function unstakeFromTable(buttonEl) {
+            const netuid = buttonEl.dataset.netuid;
+            const hotkey = buttonEl.dataset.hotkey;
+            const walletName = currentWallet;
+            if (!walletName) {
+                alert('No wallet selected');
+                return;
+            }
+            const rateTolerance = document.getElementById('unstakeRateTolerance')?.value || '2';
+            const minToleranceUnstaking = document.getElementById('minToleranceUnstaking')?.checked || false;
+            const allowPartial = document.getElementById('allowPartialUnstaking')?.checked || false;
+            const useEra = document.getElementById('useEra')?.checked || false;
+            try {
+                setButtonLoading(buttonEl, true);
+                const url = `/unstake?wallet_name=${encodeURIComponent(walletName)}&netuid=${encodeURIComponent(netuid)}&dest_hotkey=${encodeURIComponent(hotkey)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+                const response = await fetch(url);
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.detail || result.error || JSON.stringify(result));
+                }
+                alert(typeof result === 'object' ? JSON.stringify(result, null, 2) : result);
+                refreshStakeInfo();
+            } catch (error) {
+                console.error('Error unstaking:', error);
+                alert('Error unstaking: ' + error.message);
+            } finally {
+                setButtonLoading(buttonEl, false);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
         }
         
         // Call this function when the page loads to set initial state
