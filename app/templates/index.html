@@ -1432,11 +1432,53 @@
         let currentWallet = null;
         
         // Cache for stake info by wallet name
-        const stakeInfoCache = {};
+        let stakeInfoCache = {};
+        
+        // Save cache to localStorage
+        function saveStakeInfoCache() {
+            try {
+                localStorage.setItem('stakeInfoCache', JSON.stringify(stakeInfoCache));
+            } catch (e) {
+                console.error('Error saving stake info cache:', e);
+            }
+        }
+        
+        // Load cache from localStorage
+        function loadStakeInfoCache() {
+            try {
+                const cached = localStorage.getItem('stakeInfoCache');
+                if (cached) {
+                    stakeInfoCache = JSON.parse(cached);
+                }
+            } catch (e) {
+                console.error('Error loading stake info cache:', e);
+                stakeInfoCache = {};
+            }
+        }
+        
+        // Save current wallet to localStorage
+        function saveCurrentWallet() {
+            try {
+                localStorage.setItem('currentStakeInfoWallet', currentWallet);
+            } catch (e) {
+                console.error('Error saving current wallet:', e);
+            }
+        }
+        
+        // Load current wallet from localStorage
+        function loadCurrentWallet() {
+            try {
+                return localStorage.getItem('currentStakeInfoWallet');
+            } catch (e) {
+                console.error('Error loading current wallet:', e);
+                return null;
+            }
+        }
         
         // Switch wallet (show cached data if available)
         function switchWallet(walletName) {
             currentWallet = walletName;
+            saveCurrentWallet();
             
             // Update tab styles
             document.querySelectorAll('.wallet-tab').forEach(tab => {
@@ -1520,6 +1562,7 @@
                 
                 // Cache the data for this wallet
                 stakeInfoCache[currentWallet] = data;
+                saveStakeInfoCache();
                 
                 // Display the data
                 displayStakeInfo(data);
@@ -1539,16 +1582,40 @@
         
         // Call this function when the page loads to set initial state
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize current wallet to first wallet
+            // Load cached stake info from localStorage
+            loadStakeInfoCache();
+            
+            // Try to restore the last selected wallet from localStorage
+            const savedWallet = loadCurrentWallet();
             const walletTabs = document.querySelectorAll('.wallet-tab');
-            if (walletTabs.length > 0) {
-                const firstWalletTab = walletTabs[0];
-                const walletName = firstWalletTab.id.replace('wallet-tab-', '');
-                currentWallet = walletName;
+            
+            let walletToSelect = null;
+            
+            if (savedWallet) {
+                // Check if saved wallet exists in the current wallet list
+                const savedTab = document.getElementById('wallet-tab-' + savedWallet);
+                if (savedTab) {
+                    walletToSelect = savedWallet;
+                }
             }
             
-            // Load stake info on page load
-            refreshStakeInfo();
+            // If no saved wallet or saved wallet doesn't exist, use first wallet
+            if (!walletToSelect && walletTabs.length > 0) {
+                const firstWalletTab = walletTabs[0];
+                walletToSelect = firstWalletTab.id.replace('wallet-tab-', '');
+            }
+            
+            if (walletToSelect) {
+                currentWallet = walletToSelect;
+                // Switch to the wallet (this will display cached data if available)
+                switchWallet(walletToSelect);
+                
+                // If we have cached data, it's already displayed by switchWallet
+                // If not, load fresh data
+                if (!stakeInfoCache[walletToSelect]) {
+                    refreshStakeInfo();
+                }
+            }
             
             // Restore saved inputs first
             restoreInputs();
