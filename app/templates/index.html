@@ -9,7 +9,121 @@
         body {
             background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
             color: #e5e7eb;
-            padding: 0.5rem 0 0.5rem 0;
+            padding: 0.5rem;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .split-container {
+            display: flex;
+            height: calc(100vh - 1rem);
+            gap: 0.5rem;
+        }
+        .left-panel {
+            flex: 1;
+            background: #232a36;
+            border-radius: 10px;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .wallet-tab-bar {
+            background: #181c24;
+            border-radius: 0.6rem;
+            padding: 0.1rem 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+            margin-bottom: 1rem;
+        }
+        .wallet-tab {
+            font-weight: 600;
+            padding: 0.35rem 1rem;
+            border-radius: 0.4rem;
+            background: none;
+            border: none;
+            outline: none;
+            transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+            color: #a1a1aa;
+            cursor: pointer;
+            position: relative;
+            font-size: 0.9rem;
+        }
+        .wallet-tab-active {
+            color: #60a5fa;
+            background: #232a36;
+            box-shadow: 0 1px 4px rgba(96,165,250,0.09);
+        }
+        .wallet-tab-inactive:hover {
+            color: #60a5fa;
+            background: #2a3240;
+        }
+        .right-panel {
+            flex: 1;
+            background: #232a36;
+            border-radius: 10px;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-title {
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .stake-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+            background: #181c24;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .stake-table th {
+            background: #232a36;
+            color: #cbd5e1;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #353b48;
+        }
+        .stake-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #353b48;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+        .stake-table tr:hover {
+            background: #2a3240;
+        }
+        .stake-table tr:last-child td {
+            border-bottom: none;
+        }
+        .wallet-info {
+            background: #181c24;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: auto;
+        }
+        .wallet-info-item {
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+        .wallet-info-item:last-child {
+            margin-bottom: 0;
+        }
+        .wallet-info-label {
+            color: #9ca3af;
+            margin-right: 0.5rem;
         }
         .max-w-4xl {
             margin-top: 0.5rem;
@@ -284,9 +398,40 @@
 </head>
 <body class="bg-[#181c24] text-white min-h-screen p-4">
     <div class="toast-container" id="toastContainer"></div>
-    <div class="max-w-4xl mx-auto" style="margin-top:0.1rem;margin-bottom:0.1rem;">
-        <!-- Tabs -->
-        <div class="tab-bar">
+    <div class="split-container">
+        <!-- Left Panel: Stake Info -->
+        <div class="left-panel">
+            <div class="panel-title">
+                Stake Info
+            </div>
+            <!-- Wallet Tabs -->
+            <div class="wallet-tab-bar" id="walletTabBar">
+                {% for wallet in wallet_names %}
+                <button class="wallet-tab {% if loop.first %}wallet-tab-active{% else %}wallet-tab-inactive{% endif %}" 
+                        id="wallet-tab-{{ wallet }}" 
+                        onclick="switchWallet('{{ wallet }}')">
+                    {{ wallet }}
+                </button>
+                {% endfor %}
+            </div>
+            <div id="stakeInfoContent">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                    <button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div style="text-align: center; color: #9ca3af; padding: 2rem;">Loading stake info...</div>
+            </div>
+        </div>
+        
+        <!-- Right Panel: StakeWrap Control -->
+        <div class="right-panel">
+            <div class="panel-title">
+                🔒 StakeWrap Control
+            </div>
+            <div style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem;">
+                Control stake, stake limit, unstake, unstake limit, transfer stake, move stake, and withdraw operations via UI. Powered by FastAPI + uvicorn.
+            </div>
+            <!-- Tabs -->
+            <div class="tab-bar">
             <button class="tab tab-active" id="tab-balances" onclick="showTab('balances')">Balances</button>
             <button class="tab tab-inactive" id="tab-stake" onclick="showTab('stake')">Stake</button>
             <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
@@ -558,6 +703,7 @@
                     });
                 </script>
             </div>
+        </div>
         </div>
     </div>
 
@@ -1282,8 +1428,106 @@
             }
         }
 
+        // Current active wallet - will be initialized on page load
+        let currentWallet = null;
+        
+        // Switch wallet (without refreshing)
+        function switchWallet(walletName) {
+            currentWallet = walletName;
+            
+            // Update tab styles
+            document.querySelectorAll('.wallet-tab').forEach(tab => {
+                tab.classList.remove('wallet-tab-active');
+                tab.classList.add('wallet-tab-inactive');
+            });
+            const activeTab = document.getElementById('wallet-tab-' + walletName);
+            if (activeTab) {
+                activeTab.classList.remove('wallet-tab-inactive');
+                activeTab.classList.add('wallet-tab-active');
+            }
+            
+            // Don't refresh - user needs to click refresh button manually
+        }
+        
+        // Fetch and display stake info
+        async function refreshStakeInfo() {
+            const contentDiv = document.getElementById('stakeInfoContent');
+            
+            if (!currentWallet) {
+                const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+                contentDiv.innerHTML = refreshButtonHtml + '<div style="text-align: center; color: #9ca3af; padding: 2rem;">No wallet selected</div>';
+                return;
+            }
+            
+            // Keep refresh button visible
+            const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+            contentDiv.innerHTML = refreshButtonHtml + '<div style="text-align: center; color: #9ca3af; padding: 2rem;">Loading stake info...</div>';
+            
+            try {
+                const response = await fetch(`/api/stake_info?wallet_name=${encodeURIComponent(currentWallet)}`);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch stake info');
+                }
+                
+                let html = refreshButtonHtml + '<table class="stake-table">';
+                html += '<thead><tr><th>NetUID</th><th>Value (TAO)</th><th>Stake (Alpha)</th><th>Price</th><th>Hotkey</th><th>Action</th></tr></thead>';
+                html += '<tbody>';
+                
+                if (data.stakes && data.stakes.length > 0) {
+                    data.stakes.forEach(stake => {
+                        html += `<tr>
+                            <td>${stake.netuid}</td>
+                            <td>${stake.value_tao}</td>
+                            <td>${stake.stake_alpha}</td>
+                            <td>${stake.price}</td>
+                            <td style="font-family: monospace; font-size: 0.8rem;">${stake.hotkey}</td>
+                            <td><button class="btn btn-danger" onclick="unstakeFromTable(${stake.netuid}, '${stake.hotkey}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Unstake</button></td>
+                        </tr>`;
+                    });
+                } else {
+                    html += '<tr><td colspan="6" style="text-align: center; color: #9ca3af; padding: 2rem;">No stakes found</td></tr>';
+                }
+                
+                html += '</tbody></table>';
+                
+                // Add wallet info
+                html += `<div class="wallet-info">
+                    <div class="wallet-info-item"><span class="wallet-info-label">Coldkey SS58:</span>${data.wallet.coldkey_ss58}</div>
+                    <div class="wallet-info-item"><span class="wallet-info-label">Free Balance:</span>${data.wallet.free_balance}</div>
+                    <div class="wallet-info-item"><span class="wallet-info-label">Total Staked Value:</span>${data.wallet.total_staked_value}</div>
+                    <div class="wallet-info-item"><span class="wallet-info-label">Total Value:</span>${data.wallet.total_value}</div>
+                </div>`;
+                
+                contentDiv.innerHTML = html;
+            } catch (error) {
+                contentDiv.innerHTML = refreshButtonHtml + `<div style="text-align: center; color: #ef4444; padding: 2rem;">Error loading stake info: ${error.message}</div>`;
+            }
+        }
+        
+        // Unstake from table
+        function unstakeFromTable(netuid, hotkey) {
+            // Switch to unstake tab and populate fields
+            showTab('unstake');
+            document.getElementById('unstakeNetuid').value = netuid;
+            document.getElementById('unstakeValidatorHotkey').value = hotkey;
+            saveInputs();
+        }
+        
         // Call this function when the page loads to set initial state
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize current wallet to first wallet
+            const walletTabs = document.querySelectorAll('.wallet-tab');
+            if (walletTabs.length > 0) {
+                const firstWalletTab = walletTabs[0];
+                const walletName = firstWalletTab.id.replace('wallet-tab-', '');
+                currentWallet = walletName;
+            }
+            
+            // Load stake info on page load
+            refreshStakeInfo();
+            
             // Restore saved inputs first
             restoreInputs();
             

@@ -109,6 +109,72 @@ def stake_list_v3(wallet_name: str):
     return HTMLResponse(content=html_content)
 
 
+@app.get("/api/stake_info")
+def get_stake_info_json(
+    wallet_name: str = Query(None, description="Wallet name to get stake info for"),
+    username: str = Depends(get_current_username)
+):
+    """Get stake info as JSON for a specific wallet"""
+    from utils.stake_list_v2 import get_amount_with_sim_swap
+    from bittensor import Balance
+    
+    subtensor = stake_service.subtensor
+    
+    # Use the first wallet if not specified
+    if not settings.WALLET_NAMES:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "No wallets configured"}
+        )
+    
+    if wallet_name is None:
+        wallet_name = settings.WALLET_NAMES[0]
+    
+    if wallet_name not in wallets:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Wallet '{wallet_name}' not found"}
+        )
+    
+    _, delegator_ss58 = wallets[wallet_name]
+    
+    # Get stake info
+    stake_infos = subtensor.get_stake_info_for_coldkey(coldkey_ss58=delegator_ss58)
+    subnet_infos = subtensor.all_subnets()
+    
+    stakes = []
+    total_value = 0.0
+    
+    for info in stake_infos:
+        subnet_info = subnet_infos[info.netuid]
+        value = get_amount_with_sim_swap(subtensor, info.stake, info.netuid)
+        
+        stakes.append({
+            "netuid": info.netuid,
+            "value_tao": round(value, 2),
+            "stake_alpha": round(info.stake.tao, 2),
+            "price": round(subnet_info.price.tao, 4),
+            "hotkey": info.hotkey_ss58,
+        })
+        total_value += value
+    
+    balance = subtensor.get_balance(delegator_ss58)
+    total_value_balance = Balance.from_tao(total_value)
+    total_value_tao = float(total_value_balance.tao)
+    free_balance_tao = float(balance.tao)
+    
+    return JSONResponse(content={
+        "wallet_name": wallet_name,
+        "stakes": stakes,
+        "wallet": {
+            "coldkey_ss58": delegator_ss58,
+            "free_balance": f"τ{free_balance_tao:.9f}",
+            "total_staked_value": f"τ{total_value_tao:.9f}",
+            "total_value": f"τ{total_value_tao + free_balance_tao:.9f}",
+        }
+    })
+
+
 @app.get("/subnets")
 def subnets_page(request: fastapi.Request, username: str = Depends(get_current_username)):
     return templates.TemplateResponse(
