@@ -415,7 +415,7 @@
                 {% endfor %}
             </div>
             <div id="stakeInfoContent">
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 0.5rem;">
                     <button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button>
                 </div>
                 <div style="text-align: center; color: #9ca3af; padding: 2rem;">Loading stake info...</div>
@@ -1495,7 +1495,7 @@
             if (stakeInfoCache[walletName]) {
                 displayStakeInfo(stakeInfoCache[walletName]);
             } else {
-                const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+                const refreshButtonHtml = '<div style="display: flex; justify-content: flex-start; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
                 const contentDiv = document.getElementById('stakeInfoContent');
                 contentDiv.innerHTML = refreshButtonHtml + '<div style="text-align: center; color: #9ca3af; padding: 2rem;">No data loaded. Click Refresh to load stake info.</div>';
             }
@@ -1504,7 +1504,7 @@
         // Display stake info (helper function)
         function displayStakeInfo(data) {
             const contentDiv = document.getElementById('stakeInfoContent');
-            const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+            const refreshButtonHtml = '<div style="display: flex; justify-content: flex-start; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
             
             let html = refreshButtonHtml + '<table class="stake-table">';
             html += '<thead><tr><th>NetUID</th><th>Value (TAO)</th><th>Stake (Alpha)</th><th>Price</th><th>Hotkey</th><th>Action</th></tr></thead>';
@@ -1543,13 +1543,13 @@
             const contentDiv = document.getElementById('stakeInfoContent');
             
             if (!currentWallet) {
-                const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+                const refreshButtonHtml = '<div style="display: flex; justify-content: flex-start; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
                 contentDiv.innerHTML = refreshButtonHtml + '<div style="text-align: center; color: #9ca3af; padding: 2rem;">No wallet selected</div>';
                 return;
             }
             
             // Keep refresh button visible
-            const refreshButtonHtml = '<div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
+            const refreshButtonHtml = '<div style="display: flex; justify-content: flex-start; margin-bottom: 0.5rem;"><button class="btn" onclick="refreshStakeInfo()" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Refresh</button></div>';
             contentDiv.innerHTML = refreshButtonHtml + '<div style="text-align: center; color: #9ca3af; padding: 2rem;">Loading stake info...</div>';
             
             try {
