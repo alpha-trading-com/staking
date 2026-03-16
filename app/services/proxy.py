@@ -2,7 +2,8 @@ import bittensor as bt
 from pydantic_core.core_schema import int_schema
 from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import SubstrateRequestException
-from typing import Optional, cast
+from typing import Optional, cast, List, Tuple
+
 from bittensor.utils.balance import Balance, FixedPoint, fixed_to_float
 
 DEFAULT_WAIT_FOR_INCLUSION = True
@@ -331,6 +332,137 @@ class Proxy:
         is_success = receipt.is_success
         error_message = receipt.error_message
         return is_success, str(error_message)
+
+    def _batch_proxy_calls(
+        self,
+        proxy_wallet: bt.Wallet,
+        delegator: str,
+        calls: list,
+        use_era: Optional[bool] = None,
+    ) -> tuple[bool, str]:
+        """
+        Execute multiple proxy calls in a single extrinsic via Utility.batch.
+
+        Args:
+            proxy_wallet: Proxy wallet
+            delegator: Delegator address
+            calls: List of composed inner calls (e.g. add_stake / remove_stake)
+            use_era: Whether to use era parameter
+
+        Returns:
+            (success, error_message)
+        """
+        if not calls:
+            return False, "No calls to batch"
+        self.init_runtime()
+        proxy_calls = []
+        for call in calls:
+            proxy_call = self.substrate.compose_call(
+                call_module='Proxy',
+                call_function='proxy',
+                call_params={
+                    'real': delegator,
+                    'force_proxy_type': 'Staking',
+                    'call': call,
+                }
+            )
+            proxy_calls.append(proxy_call)
+        batch_call = self.substrate.compose_call(
+            call_module='Utility',
+            call_function='batch',
+            call_params={'calls': proxy_calls}
+        )
+        use_era_value = use_era if use_era is not None else self.use_era
+        if use_era_value:
+            extrinsic = self.substrate.create_signed_extrinsic(
+                call=batch_call,
+                keypair=proxy_wallet.coldkey,
+                era={"period": 64},
+            )
+        else:
+            extrinsic = self.substrate.create_signed_extrinsic(
+                call=batch_call,
+                keypair=proxy_wallet.coldkey,
+            )
+        try:
+            receipt = self.substrate.submit_extrinsic(
+                extrinsic,
+                wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
+                wait_for_finalization=DEFAULT_WAIT_FOR_FINALIZATION,
+            )
+        except Exception as e:
+            return False, str(e)
+        is_success = receipt.is_success
+        error_message = receipt.error_message
+        return is_success, str(error_message)
+
+    def batch_stake_ops(
+        self,
+        proxy_wallet: bt.Wallet,
+        delegator: str,
+        operations: List[Tuple[str, int, str, int, Optional[int], bool]],
+        use_era: Optional[bool] = None,
+    ) -> tuple[bool, str]:
+        """
+        Run multiple stake and/or unstake operations in one extrinsic.
+        Each op: (action, netuid, hotkey_ss58, amount_rao, limit_price, allow_partial).
+        limit_price None = use add_stake/remove_stake; else use add_stake_limit/remove_stake_limit.
+        """
+        self.init_runtime()
+        calls = []
+        for item in operations:
+            action, netuid, hotkey_ss58, amount_rao = item[0], item[1], item[2], item[3]
+            limit_price = item[4] if len(item) > 4 else None
+            allow_partial = item[5] if len(item) > 5 else False
+            if action == 'stake':
+                if limit_price is not None:
+                    call = self.substrate.compose_call(
+                        call_module='SubtensorModule',
+                        call_function='add_stake_limit',
+                        call_params={
+                            'hotkey': hotkey_ss58,
+                            'netuid': netuid,
+                            'amount_staked': amount_rao,
+                            'limit_price': limit_price,
+                            'allow_partial': allow_partial,
+                        }
+                    )
+                else:
+                    call = self.substrate.compose_call(
+                        call_module='SubtensorModule',
+                        call_function='add_stake',
+                        call_params={
+                            'hotkey': hotkey_ss58,
+                            'netuid': netuid,
+                            'amount_staked': amount_rao,
+                        }
+                    )
+            else:  # unstake
+                amount_unstaked = max(0, amount_rao - 1)
+                if limit_price is not None:
+                    call = self.substrate.compose_call(
+                        call_module='SubtensorModule',
+                        call_function='remove_stake_limit',
+                        call_params={
+                            'hotkey': hotkey_ss58,
+                            'netuid': netuid,
+                            'amount_unstaked': amount_unstaked,
+                            'limit_price': limit_price,
+                            'allow_partial': allow_partial,
+                        }
+                    )
+                else:
+                    call = self.substrate.compose_call(
+                        call_module='SubtensorModule',
+                        call_function='remove_stake',
+                        call_params={
+                            'hotkey': hotkey_ss58,
+                            'netuid': netuid,
+                            'amount_unstaked': amount_unstaked,
+                        }
+                    )
+            calls.append(call)
+        return self._batch_proxy_calls(proxy_wallet, delegator, calls, use_era=use_era)
 
 
 if __name__ == "__main__":

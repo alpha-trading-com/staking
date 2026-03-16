@@ -1,5 +1,5 @@
 import bittensor as bt
-from typing import Dict, Tuple, Optional, Any
+from typing import Dict, Tuple, Optional, Any, List
 
 from app.core.config import settings
 from app.services.proxy import Proxy
@@ -8,7 +8,7 @@ from utils.tolerance import (
     get_stake_min_tolerance,
     get_unstake_min_tolerance,
     calculate_stake_limit_price,
-    calculate_unstake_limit_price
+    calculate_unstake_limit_price,
 )
 
 
@@ -398,6 +398,107 @@ class StakeService:
             "error": msg
         }
     
+    def batch_ops(
+        self,
+        wallet_name: str,
+        operations: List[Dict[str, Any]],
+        use_era: Optional[bool] = None,
+        rate_tolerance: Optional[float] = None,
+        min_tolerance_staking: Optional[bool] = None,
+        min_tolerance_unstaking: Optional[bool] = None,
+        allow_partial: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Run multiple stake and unstake operations in one extrinsic.
+        Each op: {"action": "stake"|"unstake", "netuid": int, "hotkey_ss58": str, ...}
+        - stake: "tao_amount": float (required)
+        - unstake: "amount": float | None (None = unstake all)
+        When rate_tolerance is set (and not > 1.9), uses add_stake_limit/remove_stake_limit with computed limit_price.
+        """
+        if use_era is None:
+            use_era = settings.USE_ERA
+        if rate_tolerance is None:
+            rate_tolerance = settings.DEFAULT_RATE_TOLERANCE
+        if min_tolerance_staking is None:
+            min_tolerance_staking = settings.DEFAULT_MIN_TOLERANCE
+        if min_tolerance_unstaking is None:
+            min_tolerance_unstaking = settings.DEFAULT_MIN_TOLERANCE
+        if wallet_name not in self.wallets:
+            return {"success": False, "error": f"Wallet '{wallet_name}' not found"}
+        wallet, delegator = self.wallets[wallet_name]
+        use_limit = rate_tolerance <= 1.9
+        rao_ops: List[Tuple[str, int, str, int, Optional[int], bool]] = []
+        for op in operations:
+            action = (op.get("action") or "stake").lower()
+            netuid = int(op["netuid"])
+            hotkey_ss58 = op["hotkey_ss58"]
+            tao_for_tolerance: Optional[float] = None
+            if action == "stake":
+                tao_amount = float(op.get("tao_amount", 0))
+                if tao_amount <= 0:
+                    continue
+                amount_rao = bt.Balance.from_tao(tao_amount).rao
+                tao_for_tolerance = tao_amount
+            else:  # unstake
+                amount = op.get("amount")
+                if amount is None or amount == "":
+                    balance = self.subtensor.get_stake(
+                        coldkey_ss58=delegator,
+                        hotkey_ss58=hotkey_ss58,
+                        netuid=netuid,
+                    )
+                    amount_rao = max(0, balance.rao - 1)
+                    tao_for_tolerance = balance.tao if balance.rao > 0 else 0
+                else:
+                    amount_f = float(amount)
+                    if 0 < amount_f < 1:
+                        total = self.subtensor.get_stake(
+                            coldkey_ss58=delegator,
+                            hotkey_ss58=hotkey_ss58,
+                            netuid=netuid,
+                        )
+                        amount_rao = int(total.rao * amount_f)
+                        tao_for_tolerance = total.tao * amount_f
+                    else:
+                        amount_rao = bt.Balance.from_tao(amount_f).rao
+                        tao_for_tolerance = amount_f
+                if amount_rao <= 0:
+                    continue
+            limit_price: Optional[int] = None
+            if use_limit and tao_for_tolerance is not None and tao_for_tolerance > 0:
+                try:
+                    if action == "stake":
+                        limit_price = calculate_stake_limit_price(
+                            tao_amount=tao_for_tolerance,
+                            netuid=netuid,
+                            min_tolerance_staking=min_tolerance_staking,
+                            default_rate_tolerance=rate_tolerance,
+                            subtensor=self.subtensor,
+                        )
+                    else:
+                        limit_price = calculate_unstake_limit_price(
+                            tao_amount=tao_for_tolerance,
+                            netuid=netuid,
+                            min_tolerance_unstaking=min_tolerance_unstaking,
+                            default_rate_tolerance=rate_tolerance,
+                            subtensor=self.subtensor,
+                        )
+                except ValueError:
+                    limit_price = None
+            rao_ops.append((action, netuid, hotkey_ss58, amount_rao, limit_price, allow_partial))
+        if not rao_ops:
+            return {"success": False, "error": "No valid operations"}
+        try:
+            success, msg = self.proxy.batch_stake_ops(
+                proxy_wallet=wallet,
+                delegator=delegator,
+                operations=rao_ops,
+                use_era=use_era,
+            )
+            return {"success": success, "error": msg}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     def burned_register(self, wallet_name: str, hotkey: str, netuid: int) -> Dict[str, Any]:
         """
         Do burned register.

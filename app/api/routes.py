@@ -1,11 +1,30 @@
 import bittensor as bt
-from typing import Optional
-from fastapi import APIRouter, Depends
+from typing import Optional, List, Any
+from fastapi import APIRouter, Depends, Body
+from pydantic import BaseModel
 from app.constants import ROUND_TABLE_HOTKEY, NETWORK
 from app.services.stake import stake_service
 from app.services.auth import get_current_username
 from app.services.wallets import wallets
 from app.core.config import settings
+
+
+class BatchOp(BaseModel):
+    action: str  # "stake" or "unstake"
+    netuid: int
+    hotkey_ss58: str
+    tao_amount: Optional[float] = None  # for stake
+    amount: Optional[float] = None  # for unstake (None = all)
+
+
+class BatchRequest(BaseModel):
+    wallet_name: str
+    operations: List[BatchOp]
+    use_era: Optional[bool] = None
+    rate_tolerance: Optional[float] = None
+    min_tolerance_staking: Optional[bool] = None
+    min_tolerance_unstaking: Optional[bool] = None
+    allow_partial: bool = False
 
 
 router = APIRouter()
@@ -142,6 +161,33 @@ def unstake(
         retries=retries,
         use_era=use_era
     )
+
+@router.post("/batch")
+def batch(
+    body: BatchRequest,
+    username: str = Depends(get_current_username)
+):
+    """Single batch: multiple stake and/or unstake operations in one extrinsic."""
+    ops = [
+        {
+            "action": o.action,
+            "netuid": o.netuid,
+            "hotkey_ss58": o.hotkey_ss58,
+            "tao_amount": o.tao_amount,
+            "amount": o.amount,
+        }
+        for o in body.operations
+    ]
+    return stake_service.batch_ops(
+        wallet_name=body.wallet_name,
+        operations=ops,
+        use_era=body.use_era,
+        rate_tolerance=body.rate_tolerance,
+        min_tolerance_staking=body.min_tolerance_staking,
+        min_tolerance_unstaking=body.min_tolerance_unstaking,
+        allow_partial=body.allow_partial,
+    )
+
 
 @router.get("/move_stake")
 def move_stake(

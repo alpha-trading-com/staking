@@ -514,6 +514,7 @@
             <button class="tab tab-inactive" id="tab-stake" onclick="showTab('stake')">Stake</button>
             <button class="tab tab-inactive" id="tab-unstake" onclick="showTab('unstake')">Unstake</button>
             <button class="tab tab-inactive" id="tab-move" onclick="showTab('move')">Move Stake</button>
+            <button class="tab tab-inactive" id="tab-batch" onclick="showTab('batch')">Batch</button>
             <button class="tab tab-inactive" id="tab-calc" onclick="showTab('calc')">Settings</button>
             <a href="/subnets" class="tab tab-inactive" style="padding: 0.35rem 1rem; display: flex; align-items: center; text-decoration: none;" target="_blank">Subnets 🔵</a>
             <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
@@ -680,6 +681,54 @@
             </div>
         </div>
 
+        <!-- Batch Tab -->
+        <div id="tabContent-batch" style="display:none;">
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Batch Stake & Unstake (one extrinsic)</h2>
+                <p class="text-sm text-gray-400 mb-4">Mix stake and unstake in a single transaction. Action: stake = add TAO amount; unstake = amount empty means unstake all.</p>
+                <div class="input-group mb-4">
+                    <label class="input-label">Wallet Name</label>
+                    <select id="batchWalletName" class="input-field">
+                        {% for wallet in wallet_names %}
+                            <option value="{{ wallet }}" {% if loop.first %}selected{% endif %}>{{ wallet }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group mb-4">
+                    <label class="input-label">Rate Tolerance</label>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <input type="text" id="batchRateTolerance" class="input-field" value="0.5" step="0.0001" placeholder="e.g. 0.5" style="width:6rem;">
+                        <input type="checkbox" id="batchMinToleranceStaking" class="form-checkbox h-4 w-4 text-blue-600" checked>
+                        <label for="batchMinToleranceStaking" class="text-sm text-gray-400 mb-0">Use min tolerance (stake)</label>
+                        <input type="checkbox" id="batchMinToleranceUnstaking" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="batchMinToleranceUnstaking" class="text-sm text-gray-400 mb-0">Use min tolerance (unstake)</label>
+                        <input type="checkbox" id="batchAllowPartial" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="batchAllowPartial" class="text-sm text-gray-400 mb-0">Allow partial</label>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1">If rate tolerance &gt; 1.9, limit calls are skipped (no price limit). Min tolerance uses Settings offset.</p>
+                </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <button type="button" onclick="loadBatchStakes()" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Load my stakes (unstake rows)</button>
+                    <button type="button" onclick="addBatchRow()" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Add row</button>
+                </div>
+                <div class="overflow-x-auto mb-4">
+                    <table class="stake-table" id="batchTable">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Netuid</th>
+                                <th>Hotkey</th>
+                                <th>Amount (TAO)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchBody"></tbody>
+                    </table>
+                </div>
+                <button type="button" onclick="submitBatch()" class="btn">Submit batch</button>
+            </div>
+        </div>
+
         <div id="tabContent-calc" style="display:none;">
             <div class="form-container mb-8">
                 <h2 class="text-xl font-semibold mb-4">App Usage Information</h2>
@@ -840,7 +889,7 @@
                 
                 // Active tab - find which tab is currently active
                 activeTab: (() => {
-                    const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
+                    const tabs = ['balances', 'stake', 'unstake', 'move', 'batch', 'calc'];
                     for (const tab of tabs) {
                         const tabElement = document.getElementById('tab-' + tab);
                         if (tabElement && tabElement.classList.contains('tab-active')) {
@@ -967,12 +1016,16 @@
 
         // Tab logic
         function showTab(tab) {
-            const tabs = ['balances', 'stake', 'unstake', 'move', 'calc'];
+            const tabs = ['balances', 'stake', 'unstake', 'move', 'batch', 'calc'];
 
             tabs.forEach(t => {
-                document.getElementById('tabContent-' + t).style.display = (t === tab) ? '' : 'none';
-                document.getElementById('tab-' + t).classList.toggle('tab-active', t === tab);
-                document.getElementById('tab-' + t).classList.toggle('tab-inactive', t !== tab);
+                const content = document.getElementById('tabContent-' + t);
+                const tabEl = document.getElementById('tab-' + t);
+                if (content) content.style.display = (t === tab) ? '' : 'none';
+                if (tabEl) {
+                    tabEl.classList.toggle('tab-active', t === tab);
+                    tabEl.classList.toggle('tab-inactive', t !== tab);
+                }
             });
             
             // Save active tab
@@ -1138,6 +1191,101 @@
             } catch (error) {
                 console.error('Error moving stake:', error);
                 alert('Error moving stake. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Batch: stake + unstake in one extrinsic
+        function addBatchRow(action, netuid, hotkey, amount) {
+            const tbody = document.getElementById('batchBody');
+            const defaultHotkey = '5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21';
+            const hotkeyVal = (hotkey != null && hotkey !== '') ? hotkey : defaultHotkey;
+            const tr = document.createElement('tr');
+            const act = (action == null || action === '') ? 'stake' : action;
+            tr.innerHTML = `
+                <td>
+                    <select class="input-field batch-action" style="width:6rem;">
+                        <option value="stake" ${act === 'stake' ? 'selected' : ''}>stake</option>
+                        <option value="unstake" ${act === 'unstake' ? 'selected' : ''}>unstake</option>
+                    </select>
+                </td>
+                <td><input type="text" class="input-field batch-netuid" value="${netuid != null ? netuid : ''}" placeholder="netuid" style="width:5rem;"></td>
+                <td><input type="text" class="input-field batch-hotkey" value="${hotkeyVal}" placeholder="hotkey_ss58" style="min-width:12rem;"></td>
+                <td><input type="text" class="input-field batch-amount" value="${amount != null && amount !== '' ? amount : ''}" placeholder="${act === 'unstake' ? 'all' : 'TAO'}" style="width:6rem;"></td>
+                <td><button type="button" onclick="this.closest('tr').remove()" class="btn" style="padding:0.25rem 0.5rem;font-size:0.8rem;">Remove</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+        async function loadBatchStakes() {
+            const walletName = document.getElementById('batchWalletName').value;
+            if (!walletName) { alert('Select a wallet'); return; }
+            try {
+                const response = await fetch(`/api/stake_info?wallet_name=${encodeURIComponent(walletName)}`);
+                if (!response.ok) throw new Error('Failed to load stakes');
+                const data = await response.json();
+                (data.stakes || []).forEach(s => addBatchRow('unstake', s.netuid, s.hotkey, ''));
+            } catch (e) {
+                console.error(e);
+                alert('Error loading stakes: ' + (e.message || e));
+            }
+        }
+        async function submitBatch() {
+            const walletName = document.getElementById('batchWalletName').value;
+            const useEra = document.getElementById('useEra').checked;
+            const rateToleranceVal = document.getElementById('batchRateTolerance')?.value?.trim();
+            const rateTolerance = rateToleranceVal === '' ? null : parseFloat(rateToleranceVal);
+            const minToleranceStaking = document.getElementById('batchMinToleranceStaking')?.checked ?? true;
+            const minToleranceUnstaking = document.getElementById('batchMinToleranceUnstaking')?.checked ?? false;
+            const allowPartial = document.getElementById('batchAllowPartial')?.checked ?? false;
+            const rows = document.querySelectorAll('#batchBody tr');
+            const operations = [];
+            rows.forEach(tr => {
+                const action = (tr.querySelector('.batch-action')?.value || 'stake').toLowerCase();
+                const netuid = tr.querySelector('.batch-netuid')?.value?.trim();
+                const hotkey = tr.querySelector('.batch-hotkey')?.value?.trim();
+                const amountVal = tr.querySelector('.batch-amount')?.value?.trim();
+                if (!netuid || !hotkey) return;
+                const op = {
+                    action,
+                    netuid: parseInt(netuid, 10),
+                    hotkey_ss58: hotkey
+                };
+                if (action === 'stake') {
+                    const tao = parseFloat(amountVal);
+                    if (isNaN(tao) || tao <= 0) return;
+                    op.tao_amount = tao;
+                    op.amount = null;
+                } else {
+                    op.tao_amount = null;
+                    op.amount = amountVal === '' ? null : parseFloat(amountVal);
+                }
+                operations.push(op);
+            });
+            if (!operations.length) { alert('Add at least one row with action, netuid, and hotkey'); return; }
+            if (!confirm(`Submit batch with ${operations.length} operation(s) from wallet "${walletName}"?`)) return;
+            const button = document.querySelector('button[onclick="submitBatch()"]');
+            try {
+                setButtonLoading(button, true);
+                const body = {
+                    wallet_name: walletName,
+                    operations,
+                    use_era: useEra,
+                    rate_tolerance: rateTolerance,
+                    min_tolerance_staking: minToleranceStaking,
+                    min_tolerance_unstaking: minToleranceUnstaking,
+                    allow_partial: allowPartial
+                };
+                const response = await fetch('/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const result = await response.json();
+                alert(JSON.stringify(result, null, 2));
+            } catch (e) {
+                console.error(e);
+                alert('Error: ' + (e.message || e));
             } finally {
                 setButtonLoading(button, false);
             }
