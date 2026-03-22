@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Multisig script for creating blockchain transfer and proxy proposals.
 """
@@ -74,6 +75,48 @@ class MultisigProposal:
         else:
             print(f"Error creating transfer proposal: {error_message}")
 
+    def create_transfer_stake_all_proposal(self, netuid: int, hotkey: str, destination: str) -> None:
+        """
+        Create a multisig proposal for transferring stake.
+        
+        Args:
+            netuid: Subnet ID
+            hotkey: Hotkey address
+            destination: Destination coldkey address
+            amount: Amount to transfer
+        """
+        print(f"Creating transfer stake proposal...")
+        print(f"From: {self.multisig_address}")
+        print(f"To: {destination}")
+
+        amount = self.subtensor.get_stake(coldkey_ss58=self.multisig_address, hotkey_ss58=hotkey, netuid=netuid)
+        print(f"Current stake: {amount}")
+        
+        confirm = input(f"Do you really want to create this transfer stake proposal? (y/n): ")
+        if confirm.lower() != "y":
+            print("Transfer stake proposal cancelled.")
+            return
+        
+        # Create the transfer stake call
+        transfer_stake_call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='transfer_stake',
+            call_params={
+                'destination_coldkey': destination,
+                'hotkey': hotkey,
+                'origin_netuid': netuid,
+                'destination_netuid': netuid,
+                'alpha_amount': amount.rao,
+            }
+        )
+
+        # Create multisig proposal
+        is_success, error_message = self._create_multisig_proposal(transfer_stake_call)
+        if is_success:
+            print("Transfer stake proposal created successfully!")
+        else:
+            print(f"Error creating transfer stake proposal: {error_message}")
+
     def create_proxy_proposal(self, proxy_address: str, proxy_type: str) -> None:
         """
         Create a multisig proposal for adding proxy.
@@ -122,6 +165,28 @@ class MultisigProposal:
             print("Proxy proposal created successfully!")
         else:
             print(f"Error creating proxy proposal: {error_message}")
+
+    def create_remove_proxies_proposal(self) -> None:
+        print(f"Creating remove proxies proposal...")
+        print(f"Multisig: {self.multisig_address}")
+        
+        confirm = input(f"Do you really want to create this remove proxies proposal? (y/n): ")
+        if confirm.lower() != "y":
+            print("Remove proxies proposal cancelled.")
+            return
+        
+        # Create the remove_proxies call
+        remove_proxies_call = self.substrate.compose_call(
+            call_module='Proxy',
+            call_function='remove_proxies',
+        )
+        
+        # Create multisig proposal
+        is_success, error_message = self._create_multisig_proposal(remove_proxies_call)
+        if is_success:
+            print("Remove proxies proposal created successfully!")
+        else:
+            print(f"Error creating remove proxies proposal: {error_message}")
 
     def _create_multisig_proposal(self, call) -> tuple[bool, str]:
         """
@@ -185,10 +250,10 @@ def get_user_input():
     
     # Get action type
     while True:
-        action_type = input("Enter action type (transfer/proxy): ").strip().lower()
-        if action_type in ['transfer', 'proxy']:
+        action_type = input("Enter action type (transfer/proxy/transferstake/removeproxies): ").strip().lower()
+        if action_type in ['transfer', 'proxy', 'transferstake', 'removeproxies']:
             break
-        print("Invalid action type. Please enter 'transfer' or 'proxy'.")
+        print("Invalid action type. Please enter 'transfer' or 'proxy' or 'transferstake' or 'removeproxies'.")
         print("")
     
     if action_type == 'transfer':
@@ -212,6 +277,20 @@ def get_user_input():
                 continue
         
         return action_type, destination, amount
+    
+    elif action_type == 'transferstake':
+        # Get transfer stake parameters
+        netuid = input("Enter subnet ID: ").strip()
+        hotkey = input("Enter hotkey address: ").strip()
+        destination = input("Enter destination coldkey address: ").strip()
+        if not netuid or not hotkey or not destination:
+            print("Error: All parameters are required")
+            sys.exit(1)
+        
+        return action_type, int(netuid), hotkey, destination
+    
+    elif action_type == 'removeproxies':
+        return (action_type, '')
     
     else:  # proxy
         # Get proxy parameters
@@ -274,11 +353,16 @@ def main():
         user_input = get_user_input()
         action_type = user_input[0]
         
-        print("")
+        print(f"action_type: {action_type}")
         
         if action_type == 'transfer':
             _, destination, amount = user_input
             multisig.create_transfer_proposal(destination, amount)
+        elif action_type == 'transferstake':
+            _, netuid, hotkey, destination = user_input
+            multisig.create_transfer_stake_all_proposal(netuid, hotkey, destination)
+        elif action_type == 'removeproxies':
+            multisig.create_remove_proxies_proposal()
         else:  # proxy
             _, proxy_address, proxy_type = user_input
             multisig.create_proxy_proposal(proxy_address, proxy_type)
