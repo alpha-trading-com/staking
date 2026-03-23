@@ -57,7 +57,7 @@ class Settings(BaseModel):
     
     # WALLET_NAMES: List[str] = os.getenv("WALLET_NAMES", "").split(",")
     # DELEGATORS: List[str] = os.getenv("DELEGATORS", "").split(",")
-    WALLET_NAMES: List[str] = ["soon", "soon_2"]
+    WALLET_NAMES: List[str] = ["proxy", "proxy"]
     DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ", "5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
     
     ADMIN_HASH: str = "$2b$12$CqCJKab8CIgqnPU/.eT41.kzdl4d6a3/Vx70R50GAom7Im0tjGemm"
