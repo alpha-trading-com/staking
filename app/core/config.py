@@ -45,7 +45,7 @@ def save_tolerance_offset(value: Union[float, str]) -> bool:
 class Settings(BaseModel):
     VERSION: str = "0.1.0"
     #NETWORK: str = "wss://entrypoint-finney.opentensor.ai:443"
-    NETWORK: str = "ws://127.0.0.1:9944"
+    NETWORK: str = os.getenv("NETWORK", "ws://127.0.0.1:9944")
 
     # WALLET_NAMES: List[str] = []
     # DELEGATORS: List[str] = []
