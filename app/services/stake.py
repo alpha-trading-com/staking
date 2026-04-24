@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Optional, Any, List
 from app.core.config import settings
 from app.services.proxy import Proxy
 from app.services.wallets import wallets
+from utils.stake_list import get_stake_custom
 from utils.tolerance import (
     get_stake_min_tolerance,
     get_unstake_min_tolerance,
@@ -245,7 +246,8 @@ class StakeService:
         # Determine amount to unstake
         if amount is None:
             # Unstake all available balance
-            amount_balance = self.subtensor.get_stake(
+            amount_balance = get_stake_custom(
+                self.subtensor,
                 coldkey_ss58=delegator,
                 hotkey_ss58=dest_hotkey,
                 netuid=netuid
@@ -253,7 +255,8 @@ class StakeService:
         else:
             if amount < 1:
                 # Unstake percentage of the total staked amount (100 * amount percent)
-                total_stake = self.subtensor.get_stake(
+                total_stake = get_stake_custom(
+                    self.subtensor,
                     coldkey_ss58=delegator,
                     hotkey_ss58=dest_hotkey,
                     netuid=netuid
@@ -344,11 +347,14 @@ class StakeService:
             use_era = settings.USE_ERA
         
         wallet, delegator = self.wallets[wallet_name]
-        
+        print("delegator: ", delegator)
+        print("dest_hotkey: ", dest_hotkey)
+        print("netuid: ", netuid)
         # Determine amount to unstake
         if amount is None:
             # Unstake all available balance
-            amount_balance = self.subtensor.get_stake(
+            amount_balance = get_stake_custom(
+                self.subtensor,
                 coldkey_ss58=delegator,
                 hotkey_ss58=dest_hotkey,
                 netuid=netuid
@@ -356,7 +362,8 @@ class StakeService:
         else:
             if amount < 1:
                 # Unstake percentage of the total staked amount (100 * amount percent)
-                total_stake = self.subtensor.get_stake(
+                total_stake = get_stake_custom(
+                    self.subtensor,
                     coldkey_ss58=delegator,
                     hotkey_ss58=dest_hotkey,
                     netuid=netuid
@@ -365,6 +372,7 @@ class StakeService:
             else:
                 amount_balance = bt.Balance.from_tao(amount, netuid)
 
+        print("amount_balance: ", amount_balance)
         if amount_balance.rao <= 0:
             return {
                 "success": False,
@@ -442,7 +450,8 @@ class StakeService:
             else:  # unstake
                 amount = op.get("amount")
                 if amount is None or amount == "":
-                    balance = self.subtensor.get_stake(
+                    balance = get_stake_custom(
+                        self.subtensor,
                         coldkey_ss58=delegator,
                         hotkey_ss58=hotkey_ss58,
                         netuid=netuid,
@@ -452,7 +461,8 @@ class StakeService:
                 else:
                     amount_f = float(amount)
                     if 0 < amount_f < 1:
-                        total = self.subtensor.get_stake(
+                        total = get_stake_custom(
+                            self.subtensor,
                             coldkey_ss58=delegator,
                             hotkey_ss58=hotkey_ss58,
                             netuid=netuid,
@@ -563,14 +573,16 @@ class StakeService:
         wallet, delegator = self.wallets[wallet_name]
 
         if amount is None:
-            amount_balance = self.subtensor.get_stake(
+            amount_balance = get_stake_custom(
+                self.subtensor,
                 coldkey_ss58=delegator,
                 hotkey_ss58=origin_hotkey,
                 netuid=origin_netuid
             )
         else:
             if amount < 1:
-                amount_balance = self.subtensor.get_stake(
+                amount_balance = get_stake_custom(
+                    self.subtensor,
                     coldkey_ss58=delegator,
                     hotkey_ss58=origin_hotkey,
                     netuid=origin_netuid

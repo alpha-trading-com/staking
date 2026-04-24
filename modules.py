@@ -3,6 +3,7 @@ from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import SubstrateRequestException
 from typing import Optional, cast
 from bittensor.utils.balance import Balance, FixedPoint, fixed_to_float
+from utils.stake_list import get_stake_custom
 
 RPC_ENDPOINTS = {
     'test': 'wss://test.finney.opentensor.ai:443',
@@ -112,7 +113,8 @@ class RonProxy:
             amount: Amount to unstake (if not using --all)
             all: Whether to unstake all available balance
         """
-        balance = self.subtensor.get_stake(
+        balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=self.delegator,
             hotkey_ss58=hotkey,
             netuid=netuid,
@@ -214,7 +216,8 @@ class RonProxy:
             amount: Amount to swap (if not using --all)
             all: Whether to swap all available balance
         """
-        balance = self.subtensor.get_stake(
+        balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=self.delegator,
             hotkey_ss58=hotkey,
             netuid=origin_netuid,
@@ -331,7 +334,8 @@ class RonProxy:
             destination: Destination coldkey address
             amount: Amount to transfer
         """
-        balance = self.subtensor.get_stake(
+        balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=self.delegator,
             hotkey_ss58=hotkey,
             netuid=netuid,

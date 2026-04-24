@@ -5,6 +5,7 @@ from substrateinterface.exceptions import SubstrateRequestException
 from typing import Optional, cast, List, Tuple
 
 from bittensor.utils.balance import Balance, FixedPoint, fixed_to_float
+from utils.stake_list import get_stake_custom
 
 DEFAULT_WAIT_FOR_INCLUSION = True
 DEFAULT_WAIT_FOR_FINALIZATION = False
@@ -173,6 +174,7 @@ class Proxy:
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
         self.init_runtime()
+        print(f"Remove stake not limit: {amount.rao - 1}")
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
             call_function='remove_stake',
@@ -251,7 +253,8 @@ class Proxy:
             amount: Amount to move
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
-        balance = self.subtensor.get_stake(
+        balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=delegator,
             hotkey_ss58=origin_hotkey,
             netuid=origin_netuid,
@@ -275,7 +278,8 @@ class Proxy:
             }
         )
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
-        new_balance = self.subtensor.get_stake(
+        new_balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=delegator,
             hotkey_ss58=origin_hotkey,
             netuid=origin_netuid,

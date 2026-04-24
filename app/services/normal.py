@@ -5,6 +5,7 @@ from substrateinterface.exceptions import SubstrateRequestException
 from typing import Optional, cast
 from bittensor.utils.balance import Balance, FixedPoint, fixed_to_float
 from scalecodec.types import GenericCall
+from utils.stake_list import get_stake_custom
 class Normal:
     def __init__(self, network: str, use_era: bool = True):
         """
@@ -238,7 +239,8 @@ class Normal:
             amount: Amount to move
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
-        balance = self.subtensor.get_stake(
+        balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=wallet.coldkey.ss58_address,
             hotkey_ss58=origin_hotkey,
             netuid=origin_netuid,
@@ -262,7 +264,8 @@ class Normal:
             }
         )
         is_success, error_message = self._do_normal_call(wallet, call, use_era=use_era)
-        new_balance = self.subtensor.get_stake(
+        new_balance = get_stake_custom(
+            self.subtensor,
             coldkey_ss58=wallet.coldkey.ss58_address,
             hotkey_ss58=origin_hotkey,
             netuid=origin_netuid,

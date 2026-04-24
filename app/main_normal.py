@@ -17,6 +17,7 @@ from app.services.auth import get_current_username
 from app.constants import ROUND_TABLE_HOTKEY, NETWORK
 from utils.tolerance import get_stake_min_tolerance, get_unstake_min_tolerance
 from utils.stake_list_v2 import get_stake_list_v2
+from utils.stake_list import get_stake_custom
 
 app = fastapi.FastAPI()
 
@@ -174,7 +175,8 @@ def unstake(
     subnet = subtensor.subnet(netuid=netuid)
 
     if amount is None:
-        stake_balance = subtensor.get_stake(
+        stake_balance = get_stake_custom(
+            subtensor,
             coldkey_ss58=wallet.coldkeypub.ss58_address,
             hotkey_ss58=dest_hotkey,
             netuid=netuid
@@ -183,7 +185,8 @@ def unstake(
         amount = bt.Balance.from_rao(stake_balance.rao - 1, netuid)
     else:
         if amount < 1:
-            amount = subtensor.get_stake(
+            amount = get_stake_custom(
+                subtensor,
                 coldkey_ss58=wallet.coldkeypub.ss58_address,
                 hotkey_ss58=dest_hotkey,
                 netuid=netuid
@@ -255,7 +258,8 @@ def move_stake(
     subtensor = bt.Subtensor(network=NETWORK)
     # Get current stake amount
     if amount is None:
-        stake_balance = subtensor.get_stake(
+        stake_balance = get_stake_custom(
+            subtensor,
             coldkey_ss58=wallet.coldkeypub.ss58_address,
             hotkey_ss58=origin_hotkey,
             netuid=origin_netuid
@@ -264,7 +268,8 @@ def move_stake(
         amount_balance = bt.Balance.from_rao(stake_balance.rao - 1, origin_netuid)
     else:
         if amount < 1:
-            amount_balance = subtensor.get_stake(
+            amount_balance = get_stake_custom(
+                subtensor,
                 coldkey_ss58=wallet.coldkeypub.ss58_address,
                 hotkey_ss58=origin_hotkey,
                 netuid=origin_netuid

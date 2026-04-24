@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.services.proxy import Proxy
 from utils.logger import logger
 from utils.tolerance import calculate_stake_limit_price
+from utils.stake_list import get_stake_custom
 
 class Staking:
     def __init__(self):
@@ -29,7 +30,7 @@ class Staking:
             raise Exception(f"Failed to unlock wallet {self.wallet_name}")
 
     def is_staked(self, netuid):
-        return self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao > 0
+        return get_stake_custom(self.subtensor, self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao > 0
 
     def stake(self, netuid, amount, retries=1):
         print(f"Staking {amount} TAO to netuid {netuid}")
@@ -71,7 +72,8 @@ class Staking:
         retries=3,
     ):
         if amount is None:
-            amount_balance = self.subtensor.get_stake(
+            amount_balance = get_stake_custom(
+                self.subtensor,
                 coldkey_ss58=self.delegator,
                 hotkey_ss58=origin_hotkey,
                 netuid=origin_netuid,
@@ -131,7 +133,7 @@ class Staking:
             for subnet_id in range(1, 129):
                 if subnet_id == netuid:
                     continue
-                staked_amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, subnet_id).tao
+                staked_amount = get_stake_custom(self.subtensor, self.delegator, settings.DEFAULT_DEST_HOTKEY, subnet_id).tao
                 if staked_amount < 1:
                     continue    
                 still_staking = True
@@ -152,7 +154,7 @@ class Staking:
                 break
 
     def unstake(self, netuid):
-        amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
+        amount = get_stake_custom(self.subtensor, self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
         print(f"Unstaking {amount} TAO from netuid {netuid}")
         if amount < 1:
             print(f"No stake to unstake from netuid {netuid}")

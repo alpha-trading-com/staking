@@ -14,6 +14,7 @@ from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
 from app.services.proxy import Proxy
 from utils.logger import logger
+from utils.stake_list import get_stake_custom
 
 
 WALLET_NAMES: List[str] = ["soon", "soon_2"]
@@ -34,7 +35,8 @@ if __name__ == '__main__':
     wallet = bt.Wallet(name=wallet_name)
     wallet.unlock_coldkey()
 
-    amount_balance = subtensor.get_stake(
+    amount_balance = get_stake_custom(
+        subtensor,
         coldkey_ss58=delegator,
         hotkey_ss58=dest_hotkey,
         netuid=netuid
@@ -51,7 +53,8 @@ if __name__ == '__main__':
                 logger.error(f"Subnet is None for netuid: {netuid}")
                 continue
 
-            amount_balance = subtensor.get_stake(
+            amount_balance = get_stake_custom(
+                subtensor,
                 coldkey_ss58=delegator,
                 hotkey_ss58=dest_hotkey,
                 netuid=netuid

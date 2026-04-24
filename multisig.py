@@ -9,6 +9,7 @@ from bittensor.utils.balance import Balance
 from dotenv import load_dotenv
 import os
 import sys
+from utils.stake_list import get_stake_custom
 
 RPC_ENDPOINTS = {
     'test': 'wss://test.finney.opentensor.ai:443',
@@ -89,7 +90,7 @@ class MultisigProposal:
         print(f"From: {self.multisig_address}")
         print(f"To: {destination}")
 
-        amount = self.subtensor.get_stake(coldkey_ss58=self.multisig_address, hotkey_ss58=hotkey, netuid=netuid)
+        amount = get_stake_custom(self.subtensor, coldkey_ss58=self.multisig_address, hotkey_ss58=hotkey, netuid=netuid)
         print(f"Current stake: {amount}")
         
         confirm = input(f"Do you really want to create this transfer stake proposal? (y/n): ")

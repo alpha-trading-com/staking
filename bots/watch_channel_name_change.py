@@ -8,6 +8,7 @@ from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
 from app.services.proxy import Proxy
 from utils.logger import logger
+from utils.stake_list import get_stake_custom
 
 
 
@@ -37,7 +38,7 @@ class ChannelMonitorStaker:
             raise Exception(f"Failed to unlock wallet {self.wallet_name}")
 
     def is_staked(self, netuid):
-        return self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao > 0
+        return get_stake_custom(self.subtensor, self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao > 0
 
     def stake(self, netuid, amount):
         print(f"Staking {amount} TAO to netuid {netuid}")
@@ -57,7 +58,7 @@ class ChannelMonitorStaker:
             return False
 
     def unstake(self, netuid):
-        amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
+        amount = get_stake_custom(self.subtensor, self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
         print(f"Unstaking {amount} TAO from netuid {netuid}")
         result, msg = self.proxy.remove_stake(
             proxy_wallet=self.wallet, 

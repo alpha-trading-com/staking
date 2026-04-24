@@ -19,6 +19,7 @@ from app.constants import ROUND_TABLE_HOTKEY
 from app.core.config import settings
 from app.services.fast_proxy import FastProxy
 from utils.logger import logger
+from utils.stake_list import get_stake_custom
 
 
 COLDKEYS_TO_DETECT = [
@@ -85,7 +86,7 @@ class EventDetector:
             return False
 
     def unstake(self, netuid):
-        amount = self.subtensor.get_stake(self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
+        amount = get_stake_custom(self.subtensor, self.delegator, settings.DEFAULT_DEST_HOTKEY, netuid).tao
         print(f"Unstaking {amount} TAO from netuid {netuid}")
         result, msg = self.proxy.remove_stake(
             proxy_wallet=self.wallet, 
