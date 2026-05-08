@@ -27,7 +27,7 @@ def start_call_extrinsic(subtensor: bt.Subtensor, netuid: int, wallet: bt.Wallet
         print(f"Error starting call: {receipt.error_message}")
 
 if __name__ == "__main__":
-    netuid = 15
+    netuid = 38
     subtensor = bt.subtensor(network="finney")
     wallet = bt.Wallet(name="proxy")
     wallet.unlock_coldkey()
