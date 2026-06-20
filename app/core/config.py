@@ -60,7 +60,7 @@ class Settings(BaseModel):
     # WALLET_NAMES: List[str] = ["proxy"]
     # DELEGATORS: List[str] = ["5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
     WALLET_NAMES: List[str] = ["proxy"]
-    DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
+    DELEGATORS: List[str] = ["5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
     
     ADMIN_HASH: str = "$2b$12$CqCJKab8CIgqnPU/.eT41.kzdl4d6a3/Vx70R50GAom7Im0tjGemm"
     TOLERANCE_OFFSET: Union[float, str] = load_tolerance_offset()
