@@ -32,6 +32,77 @@ class Proxy:
             auto_reconnect=True,
         )
 
+    def compose_add_stake_proxy_call(
+        self,
+        delegator: str,
+        netuid: int,
+        hotkey: str,
+        amount: Balance,
+        price_with_tolerance: int,
+        allow_partial: bool = False,
+    ):
+        self.init_runtime()
+        call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='add_stake_limit',
+            call_params={
+                "hotkey": hotkey,
+                "netuid": netuid,
+                "amount_staked": amount.rao,
+                "limit_price": price_with_tolerance,
+                "allow_partial": allow_partial,
+            }
+        )
+        return self.substrate.compose_call(
+            call_module='Proxy',
+            call_function='proxy',
+            call_params={
+                'real': delegator,
+                'force_proxy_type': 'Staking',
+                'call': call,
+            }
+        )
+
+    def create_signed_proxy_extrinsic(
+        self,
+        proxy_wallet: bt.Wallet,
+        proxy_call,
+        nonce: Optional[int] = None,
+        use_era: Optional[bool] = None,
+        era_period: int = 64,
+        block_number: Optional[int] = None,
+    ):
+        self.init_runtime()
+        use_era_value = use_era if use_era is not None else self.use_era
+        kwargs = {
+            "call": proxy_call,
+            "keypair": proxy_wallet.coldkey,
+        }
+        if nonce is not None:
+            kwargs["nonce"] = nonce
+        if use_era_value:
+            if block_number is None:
+                block_number = self.substrate.get_block_number(None)
+            kwargs["era"] = {"period": era_period, "current": block_number}
+        return self.substrate.create_signed_extrinsic(**kwargs)
+
+    def submit_prepared_extrinsic(
+        self,
+        extrinsic,
+        wait_for_inclusion: bool = DEFAULT_WAIT_FOR_INCLUSION,
+        wait_for_finalization: bool = DEFAULT_WAIT_FOR_FINALIZATION,
+    ) -> tuple[bool, str]:
+        self.init_runtime()
+        try:
+            receipt = self.substrate.submit_extrinsic(
+                extrinsic,
+                wait_for_inclusion=wait_for_inclusion,
+                wait_for_finalization=wait_for_finalization,
+            )
+        except Exception as e:
+            return False, str(e)
+        return receipt.is_success, str(receipt.error_message)
+
     def add_stake(
         self, 
         proxy_wallet: bt.Wallet,
@@ -55,20 +126,21 @@ class Proxy:
             allow_partial: Whether to allow partial staking
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
-        self.init_runtime()
-        call = self.substrate.compose_call(
-            call_module='SubtensorModule',
-            call_function='add_stake_limit',
-            call_params={
-                "hotkey": hotkey,
-                "netuid": netuid,
-                "amount_staked": amount.rao,
-                "limit_price": price_with_tolerance,
-                "allow_partial": allow_partial,
-            }
+        proxy_call = self.compose_add_stake_proxy_call(
+            delegator=delegator,
+            netuid=netuid,
+            hotkey=hotkey,
+            amount=amount,
+            price_with_tolerance=price_with_tolerance,
+            allow_partial=allow_partial,
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
-        
+        extrinsic = self.create_signed_proxy_extrinsic(
+            proxy_wallet=proxy_wallet,
+            proxy_call=proxy_call,
+            use_era=use_era,
+            era_period=1,
+        )
+        is_success, error_message = self.submit_prepared_extrinsic(extrinsic)
         if is_success:
             return True, f"Stake added successfully"
         else:
