@@ -95,4 +95,4 @@ if __name__ == "__main__":
     _get_staking_context()
     rebuild_prebuilt_extrinsics(force=True)
     print("Prebuilt extrinsics rebuilt")
-    add_stake(1, 1)
+    #add_stake(1, 1)
