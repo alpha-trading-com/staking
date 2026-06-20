@@ -49,7 +49,7 @@ if __name__ == "__main__":
         if current_block > last_checked_block:
             owner_coldkeys = get_owner_coldkeys(subtensor)
             last_checked_block = current_block
-
+        print("hook running...")
         events = fetch_extrinsic_data(subtensor, owner_coldkeys, seen_order, seen_set)
         if events:
             for event in events:

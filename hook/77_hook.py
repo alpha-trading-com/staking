@@ -107,4 +107,5 @@ if __name__ == "__main__":
     print(f"Starting SN{NETUID_77} hook...")
 
     while True:
+        print("77 hook running...")
         fetch_extrinsic_data_process(subtensor, seen_order, seen_set)
