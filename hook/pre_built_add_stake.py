@@ -82,7 +82,11 @@ def add_stake(subnet: int, amount: float):
             print(f"Failed to build extrinsic for subnet {subnet}")
             return
 
-    result, msg = _proxy.submit_prepared_extrinsic(extrinsic)
+    result, msg = _proxy.submit_prepared_extrinsic(
+        extrinsic=extrinsic,
+        wait_for_inclusion=False,
+        wait_for_finalization=False,
+    )
     if result:
         print(f"Stake submitted: {amount} TAO to subnet {subnet}")
     else:

@@ -92,7 +92,6 @@ class Proxy:
         wait_for_inclusion: bool = DEFAULT_WAIT_FOR_INCLUSION,
         wait_for_finalization: bool = DEFAULT_WAIT_FOR_FINALIZATION,
     ) -> tuple[bool, str]:
-        self.init_runtime()
         try:
             receipt = self.substrate.submit_extrinsic(
                 extrinsic,
