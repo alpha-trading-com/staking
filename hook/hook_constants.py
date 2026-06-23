@@ -24,3 +24,5 @@ UNSTAKE_TO_ROOT_IF_PRICE_ABOVE: dict[int, float] = {
     27: 0.020,
     58: 0.020
 }
+
+PREBUILT_EXTRINSICS_INTERVAL = 20 # blocks

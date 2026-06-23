@@ -18,6 +18,7 @@ from hook_constants import (
     WHITELISTED_SUBNETS,
     STAKE_AMOUNT_TAO,
     BLACK_LISTED_COLDKEYS,
+    PREBUILT_EXTRINSICS_INTERVAL,
 )
 
 
@@ -49,7 +50,7 @@ if __name__ == "__main__":
         if current_block > last_checked_block:
             owner_coldkeys = get_owner_coldkeys(subtensor)
             last_checked_block = current_block
-        if current_block % 10 == 0:
+        if current_block % PREBUILT_EXTRINSICS_INTERVAL == 0:
             rebuild_prebuilt_extrinsics(force=True)
         print("hook running...")
         events = fetch_extrinsic_data(subtensor, owner_coldkeys, seen_order, seen_set)
