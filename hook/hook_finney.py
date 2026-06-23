@@ -50,6 +50,8 @@ if __name__ == "__main__":
         if current_block > last_checked_block:
             owner_coldkeys = get_owner_coldkeys(subtensor)
             last_checked_block = current_block
+        if current_block % 10 == 0:
+            rebuild_prebuilt_extrinsics(force=True)
         print("hook finney running...")
         events = fetch_extrinsic_data(subtensor_event_watch, owner_coldkeys, seen_order, seen_set)
         if events:

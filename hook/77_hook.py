@@ -16,7 +16,7 @@ from app.services.proxy import Proxy
 from hook_constants import SEEN_MAX, STAKE_AMOUNT_TAO
 from utils.tolerance import calculate_stake_limit_price
 
-NETUID_77 = 77
+NETUID_77 = 51
 OWNER_COLDKEY_77 = "5GxxsUeYRyJSJKCuPeG1jZZiCummHJttmTNsfgDRSfxVnhGi"
 STAKE_AMOUNT_TO_77 = 200
 
