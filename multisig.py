@@ -320,7 +320,7 @@ def main():
     
     print(f"=== Loaded environment variables ===")
     
-    network = os.getenv('NETWORK')
+    network = "finney"
     multisig_address = os.getenv('DELEGATOR')  # Using delegator as multisig address
     proxy_wallet = os.getenv('PROXY_WALLET')
     approver_address = os.getenv('APPROVER')
