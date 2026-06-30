@@ -37,7 +37,6 @@ def fetch_extrinsic_data(
     events = []
 
     extrinsics = subtensor.substrate.retrieve_pending_extrinsics()
-    print(f"Fetched {len(extrinsics)} events from mempool")
 
     for ex in extrinsics:
         call = ex.value.get('call', {})
@@ -54,23 +53,32 @@ def fetch_extrinsic_data(
             continue
         subnet_id = owner_coldkeys.index(address)
         print(subnet_id)
+        
+        if subnet_id != 58:
+            continue
 
-        if (
-            call_module == 'SubtensorModule' and
-            call_function == 'start_call'
-        ):
-            events.append({
-                'event_type': EXTRINSIC_START_CALL,
-                'subnet': subnet_id,
-                'address': address,
-            })
+        events.append({
+            'event_type': EXTRINSIC_START_CALL,
+            'subnet': subnet_id,
+            'address': address,
+        })
 
-        if call_module == 'MevShield' and call_function == 'submit_encrypted':
-            events.append({
-                'event_type': EXTRINSIC_SUBMIT_ENCRYPTED,
-                'subnet': subnet_id,
-                'address': address,
-            })
+        # if (
+        #     call_module == 'SubtensorModule' and
+        #     call_function == 'start_call'
+        # ):
+        #     events.append({
+        #         'event_type': EXTRINSIC_START_CALL,
+        #         'subnet': subnet_id,
+        #         'address': address,
+        #     })
+
+        # if call_module == 'MevShield' and call_function == 'submit_encrypted':
+        #     events.append({
+        #         'event_type': EXTRINSIC_SUBMIT_ENCRYPTED,
+        #         'subnet': subnet_id,
+        #         'address': address,
+        #     })
 
     return events
 
@@ -92,6 +100,7 @@ if __name__ == "__main__":
         if current_block > last_checked_block:
             owner_coldkeys = get_owner_coldkeys(subtensor)
             last_checked_block = current_block
+            print(owner_coldkeys.index("5CLUzEqecEfGFxMwHSU5vbgzpFQCGZuC56DDX354JKe69gtJ"))
         events = fetch_extrinsic_data(subtensor, owner_coldkeys, seen_order, seen_set)
         if events:
             print(events)

@@ -73,6 +73,7 @@ def rebuild_prebuilt_extrinsics(force: bool = False):
 
 
 def add_stake(subnet: int, amount: float):
+    print(f"Adding stake to subnet {subnet}")
     extrinsic = _prebuilt_extrinsics.get(subnet)
     if extrinsic is None:
         print(f"No prebuilt extrinsic for subnet {subnet}, rebuilding...")
@@ -84,7 +85,7 @@ def add_stake(subnet: int, amount: float):
 
     result, msg = _proxy.submit_prepared_extrinsic(
         extrinsic=extrinsic,
-        wait_for_inclusion=False,
+        wait_for_inclusion=True,
         wait_for_finalization=False,
     )
     if result:

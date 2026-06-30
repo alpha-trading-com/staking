@@ -1,6 +1,7 @@
 import sys
 from collections import deque
 from pathlib import Path
+import bittensor as bt
 
 _HOOK_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _HOOK_DIR.parent
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     seen_order: deque = deque(maxlen=SEEN_MAX)
     seen_set: set = set()
     last_checked_block = 0
+    bt.logging.off()
     print("Starting hook...")
 
     while True:
@@ -50,9 +52,10 @@ if __name__ == "__main__":
         if current_block > last_checked_block:
             owner_coldkeys = get_owner_coldkeys(subtensor)
             last_checked_block = current_block
+            #print(owner_coldkeys.index("5CLUzEqecEfGFxMwHSU5vbgzpFQCGZuC56DDX354JKe69gtJ"))
+
         if current_block % PREBUILT_EXTRINSICS_INTERVAL == 0:
             rebuild_prebuilt_extrinsics(force=True)
-        print("hook running...")
         events = fetch_extrinsic_data(subtensor, owner_coldkeys, seen_order, seen_set)
         if events:
             for event in events:
