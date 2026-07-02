@@ -53,9 +53,6 @@ def fetch_extrinsic_data(
             continue
         subnet_id = owner_coldkeys.index(address)
         print(subnet_id)
-        
-        if subnet_id != 58:
-            continue
 
         events.append({
             'event_type': EXTRINSIC_START_CALL,
