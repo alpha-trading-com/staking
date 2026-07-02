@@ -38,7 +38,7 @@ def process_event(event: dict):
 
 
 if __name__ == "__main__":
-    subtensor, _, _, _ = _get_staking_context()
+    subtensor, proxy, _, _ = _get_staking_context()
     rebuild_prebuilt_extrinsics(force=True)
 
     seen_order: deque = deque(maxlen=SEEN_MAX)
@@ -52,6 +52,7 @@ if __name__ == "__main__":
         if current_block > last_checked_block:
             owner_coldkeys = get_owner_coldkeys(subtensor)
             last_checked_block = current_block
+            proxy.init_runtime()
             #print(owner_coldkeys.index("5CLUzEqecEfGFxMwHSU5vbgzpFQCGZuC56DDX354JKe69gtJ"))
 
         if current_block % PREBUILT_EXTRINSICS_INTERVAL == 0:
