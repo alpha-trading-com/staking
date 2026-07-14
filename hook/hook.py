@@ -45,19 +45,24 @@ if __name__ == "__main__":
     seen_set: set = set()
     last_checked_block = 0
     bt.logging.off()
+
     print("Starting hook...")
+    owner_coldkeys = []
+    prev_extrinsics_len = 0
 
     while True:
-        current_block = subtensor.get_current_block()
-        if current_block > last_checked_block:
-            owner_coldkeys = get_owner_coldkeys(subtensor)
-            last_checked_block = current_block
-            proxy.init_runtime()
-            #print(owner_coldkeys.index("5CLUzEqecEfGFxMwHSU5vbgzpFQCGZuC56DDX354JKe69gtJ"))
+        extrinsics = subtensor.substrate.retrieve_pending_extrinsics()
+        cur_extrinsics_len = len(extrinsics)
 
-        if current_block % PREBUILT_EXTRINSICS_INTERVAL == 0:
-            rebuild_prebuilt_extrinsics(force=True)
-        events = fetch_extrinsic_data(subtensor, owner_coldkeys, seen_order, seen_set)
+        if prev_extrinsics_len > cur_extrinsics_len:
+            #New Block started: the pending pool was flushed into a block
+            #owner_coldkeys = get_owner_coldkeys(subtensor)
+            print("New Block started")
+            proxy.init_runtime()
+            
+        prev_extrinsics_len = cur_extrinsics_len
+
+        events = fetch_extrinsic_data(extrinsics, owner_coldkeys, seen_order, seen_set)
         if events:
             for event in events:
                 process_event(event)

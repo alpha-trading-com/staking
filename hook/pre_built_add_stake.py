@@ -61,6 +61,7 @@ def rebuild_prebuilt_extrinsics(force: bool = False):
             hotkey=hotkey,
             amount=amount,
             price_with_tolerance=LIMIT_PRICE_IN_RAO,
+            allow_partial=True,
         )
         new_extrinsics[netuid] = proxy.create_signed_proxy_extrinsic(
             proxy_wallet=wallet,

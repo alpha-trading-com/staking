@@ -28,15 +28,13 @@ def _remember_hash(extrinsic_hash, seen_order: deque, seen_set: set) -> bool:
 
 
 def fetch_extrinsic_data(
-    subtensor: bt.Subtensor,
+    extrinsics: list,
     owner_coldkeys: list,
     seen_order: deque,
     seen_set: set,
 ):
     """Extract ColdkeySwapScheduled events from the data"""
     events = []
-
-    extrinsics = subtensor.substrate.retrieve_pending_extrinsics()
 
     for ex in extrinsics:
         call = ex.value.get('call', {})
@@ -49,16 +47,18 @@ def fetch_extrinsic_data(
         if _remember_hash(extrinsic_hash, seen_order, seen_set):
             continue
 
-        if address not in owner_coldkeys:
-            continue
-        subnet_id = owner_coldkeys.index(address)
-        print(subnet_id)
+        # if address not in owner_coldkeys:
+        #     continue
+        # subnet_id = owner_coldkeys.index(address)
+        # print(subnet_id)
 
-        events.append({
-            'event_type': EXTRINSIC_START_CALL,
-            'subnet': subnet_id,
-            'address': address,
-        })
+        if address == "5C9y6fnLPSzBeh1Np7f4DnGen42xV29nL9qZTDuwpVC4iTEE":
+            events.append({
+                'event_type': EXTRINSIC_START_CALL,
+                'subnet': 90,
+                'address': address,
+            })
+            break
 
         # if (
         #     call_module == 'SubtensorModule' and
@@ -84,21 +84,3 @@ def get_owner_coldkeys(subtensor: bt.Subtensor) -> list:
     owner_coldkeys = [subnet_info.owner_coldkey for subnet_info in subnet_infos]
     return owner_coldkeys
 
-
-if __name__ == "__main__":
-    subtensor = bt.Subtensor("finney")
-    seen_order: deque = deque(maxlen=SEEN_MAX)
-    seen_set: set = set()
-    last_checked_block = 0
-
-
-    while True:
-        current_block = subtensor.get_current_block()
-        if current_block > last_checked_block:
-            owner_coldkeys = get_owner_coldkeys(subtensor)
-            last_checked_block = current_block
-            print(owner_coldkeys.index("5CLUzEqecEfGFxMwHSU5vbgzpFQCGZuC56DDX354JKe69gtJ"))
-        events = fetch_extrinsic_data(subtensor, owner_coldkeys, seen_order, seen_set)
-        if events:
-            print(events)
-        time.sleep(1)
