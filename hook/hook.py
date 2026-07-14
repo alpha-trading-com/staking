@@ -55,7 +55,6 @@ if __name__ == "__main__":
         cur_extrinsics_len = len(extrinsics)
 
         if prev_extrinsics_len > cur_extrinsics_len:
-            #New Block started: the pending pool was flushed into a block
             #owner_coldkeys = get_owner_coldkeys(subtensor)
             print("New Block started")
             proxy.init_runtime()
