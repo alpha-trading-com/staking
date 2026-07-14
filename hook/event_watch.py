@@ -47,11 +47,6 @@ def fetch_extrinsic_data(
         if _remember_hash(extrinsic_hash, seen_order, seen_set):
             continue
 
-        # if address not in owner_coldkeys:
-        #     continue
-        # subnet_id = owner_coldkeys.index(address)
-        # print(subnet_id)
-
         if address == "5C9y6fnLPSzBeh1Np7f4DnGen42xV29nL9qZTDuwpVC4iTEE":
             events.append({
                 'event_type': EXTRINSIC_START_CALL,
@@ -59,6 +54,11 @@ def fetch_extrinsic_data(
                 'address': address,
             })
             break
+
+        # if address not in owner_coldkeys:
+        #     continue
+        # subnet_id = owner_coldkeys.index(address)
+        # print(subnet_id)
 
         # if (
         #     call_module == 'SubtensorModule' and
