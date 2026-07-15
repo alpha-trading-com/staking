@@ -45,7 +45,7 @@ def save_tolerance_offset(value: Union[float, str]) -> bool:
 class Settings(BaseModel):
     VERSION: str = "0.1.0"
     #NETWORK: str = "wss://entrypoint-finney.opentensor.ai:443"
-    NETWORK: str = os.getenv("NETWORK", "ws://127.0.0.1:9944")
+    NETWORK: str = "ws://127.0.0.1:9944"
 
     # WALLET_NAMES: List[str] = []
     # DELEGATORS: List[str] = []
@@ -59,9 +59,13 @@ class Settings(BaseModel):
     # DELEGATORS: List[str] = os.getenv("DELEGATORS", "").split(",")
     # WALLET_NAMES: List[str] = ["proxy"]
     # DELEGATORS: List[str] = ["5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
-    WALLET_NAMES: List[str] = ["proxy"]
-    DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
+    # WALLET_NAMES: List[str] = ["proxy"]
+    # DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
+    WALLET_NAMES: List[str] = ["leo"]
+    DELEGATORS: List[str] = ["5ESwpyuGxBmkXuQ1J8DqtmhFZQEDzLWKVup9xai567JRhvDN"]
     
+
+
     ADMIN_HASH: str = "$2b$12$CqCJKab8CIgqnPU/.eT41.kzdl4d6a3/Vx70R50GAom7Im0tjGemm"
     TOLERANCE_OFFSET: Union[float, str] = load_tolerance_offset()
     
