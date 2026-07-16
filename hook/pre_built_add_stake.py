@@ -33,7 +33,7 @@ def _get_staking_context():
         from app.services.proxy import Proxy
 
         _subtensor = bt.Subtensor(NETWORK)
-        _proxy = Proxy(network=NETWORK, use_era=settings.USE_ERA)
+        _proxy = Proxy(network=NETWORK)
         _proxy.init_runtime()
         wallet_name = settings.WALLET_NAMES[0]
         _wallet = bt.Wallet(name=wallet_name)

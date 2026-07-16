@@ -28,7 +28,7 @@ _delegator: str | None = None
 def _init_staking():
     global _proxy, _wallet, _delegator
     if _proxy is None:
-        _proxy = Proxy(network=settings.NETWORK, use_era=settings.USE_ERA)
+        _proxy = Proxy(network=settings.NETWORK)
         _proxy.init_runtime()
         wallet_name = settings.WALLET_NAMES[0]
         _wallet = bt.Wallet(name=wallet_name)

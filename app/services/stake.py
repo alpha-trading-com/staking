@@ -29,7 +29,7 @@ class StakeService:
             proxy: Proxy instance for handling stake operations
         """
         self.wallets = wallets
-        self.proxy = Proxy(settings.NETWORK, use_era=settings.USE_ERA)
+        self.proxy = Proxy(settings.NETWORK)
         self.subtensor = bt.Subtensor(network=settings.NETWORK)
     
     def get_stake_min_tolerance(self, tao_amount: float, netuid: int) -> float:

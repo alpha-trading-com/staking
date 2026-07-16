@@ -11,9 +11,8 @@ DEFAULT_WAIT_FOR_INCLUSION = True
 DEFAULT_WAIT_FOR_FINALIZATION = False
 
 class Proxy:
-    def __init__(self, network: str, use_era: bool = True):
+    def __init__(self, network: str):
         self.network = network
-        self.use_era = use_era
         self.subtensor = bt.Subtensor(network=network)
 
 
@@ -61,19 +60,18 @@ class Proxy:
         proxy_wallet: bt.Wallet,
         proxy_call,
         nonce: Optional[int] = None,
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
         era_period: int = 64,
         block_number: Optional[int] = None,
     ):
         self.init_runtime()
-        use_era_value = use_era if use_era is not None else self.use_era
         kwargs = {
             "call": proxy_call,
             "keypair": proxy_wallet.coldkey,
         }
         if nonce is not None:
             kwargs["nonce"] = nonce
-        if use_era_value:
+        if use_era:
             if block_number is None:
                 block_number = self.substrate.get_block_number(None)
             kwargs["era"] = {"period": era_period, "current": block_number}
@@ -104,7 +102,7 @@ class Proxy:
         amount: Balance,
         price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         self.init_runtime()
         if price_with_tolerance is not None:
@@ -144,7 +142,7 @@ class Proxy:
         amount: Balance,
         price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         self.init_runtime()
         if price_with_tolerance is not None:
@@ -181,7 +179,7 @@ class Proxy:
         delegator: str,
         hotkey: str,
         netuid: int,
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
@@ -213,7 +211,7 @@ class Proxy:
         origin_netuid: int,
         destination_netuid: int,
         amount: Balance,
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         balance = get_stake_custom(
             self.subtensor,
@@ -258,7 +256,7 @@ class Proxy:
         delegator: str,
         call,
         proxy_type: str = 'Staking',
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
@@ -272,8 +270,7 @@ class Proxy:
                 'call': call,
             }
         )
-        use_era_value = use_era if use_era is not None else self.use_era
-        if use_era_value:
+        if use_era:
             extrinsic = self.substrate.create_signed_extrinsic(
                 call=proxy_call,
                 keypair=proxy_wallet.coldkey,
@@ -303,7 +300,7 @@ class Proxy:
         proxy_wallet: bt.Wallet,
         delegator: str,
         calls: list,
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         if not calls:
             return False, "No calls to batch"
@@ -325,8 +322,7 @@ class Proxy:
             call_function='batch',
             call_params={'calls': proxy_calls}
         )
-        use_era_value = use_era if use_era is not None else self.use_era
-        if use_era_value:
+        if use_era:
             extrinsic = self.substrate.create_signed_extrinsic(
                 call=batch_call,
                 keypair=proxy_wallet.coldkey,
@@ -354,7 +350,7 @@ class Proxy:
         proxy_wallet: bt.Wallet,
         delegator: str,
         operations: List[Tuple[str, int, str, int, Optional[int], bool]],
-        use_era: Optional[bool] = None,
+        use_era: bool = True,
     ) -> tuple[bool, str]:
         self.init_runtime()
         calls = []
