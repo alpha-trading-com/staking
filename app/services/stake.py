@@ -180,12 +180,13 @@ class StakeService:
 
         for _ in range(retries):
             try:
-                result, msg = self.proxy.add_stake_not_limit(
+                result, msg = self.proxy.add_stake(
                     amount=bt.Balance.from_tao(tao_amount),
                     proxy_wallet=wallet,
                     delegator=delegator,
                     netuid=netuid,
                     hotkey=dest_hotkey,
+                    price_with_tolerance=None,
                     use_era=use_era,
                 )
                 if result:
@@ -385,12 +386,13 @@ class StakeService:
 
         for _ in range(retries):
             try:
-                result, msg = self.proxy.remove_stake_not_limit(
+                result, msg = self.proxy.remove_stake(
                     amount=amount_balance,
                     proxy_wallet=wallet,
                     delegator=delegator,
                     netuid=netuid,
                     hotkey=dest_hotkey,
+                    price_with_tolerance=None,
                     use_era=use_era,
                 )
                 if result:

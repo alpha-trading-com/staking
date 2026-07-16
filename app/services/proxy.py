@@ -103,158 +103,117 @@ class Proxy:
         return receipt.is_success, str(receipt.error_message)
 
     def add_stake(
-        self, 
+        self,
         proxy_wallet: bt.Wallet,
         delegator: str,
-        netuid: int, 
-        hotkey: str, 
-        amount: Balance, 
-        price_with_tolerance: int,
+        netuid: int,
+        hotkey: str,
+        amount: Balance,
+        price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         """
         Add stake to a subnet.
-        
+
+        When ``price_with_tolerance`` is provided, the MEV-shielded limit-price
+        extrinsic (``add_stake_limit``) is used: the extrinsic reverts if the
+        alpha price has moved past the limit at execution time, so a sandwich
+        attack cannot force a fill at an inflated price. When it is ``None``, the
+        plain ``add_stake`` extrinsic is used with no price protection.
+
         Args:
             proxy_wallet: Proxy wallet
+            delegator: Delegator (real) coldkey address
             netuid: Network/subnet ID
             hotkey: Hotkey address
             amount: Amount to stake
-            tolerance: Tolerance for stake amount
-            allow_partial: Whether to allow partial staking
-            use_era: Whether to use era parameter (overrides instance default if provided)
-        """
-        proxy_call = self.compose_add_stake_proxy_call(
-            delegator=delegator,
-            netuid=netuid,
-            hotkey=hotkey,
-            amount=amount,
-            price_with_tolerance=price_with_tolerance,
-            allow_partial=allow_partial,
-        )
-        extrinsic = self.create_signed_proxy_extrinsic(
-            proxy_wallet=proxy_wallet,
-            proxy_call=proxy_call,
-            use_era=use_era,
-            era_period=1,
-        )
-        is_success, error_message = self.submit_prepared_extrinsic(extrinsic)
-        if is_success:
-            return True, f"Stake added successfully"
-        else:
-            return False, f"Error: {error_message}"
-
-
-    def add_stake_not_limit(
-        self, 
-        proxy_wallet: bt.Wallet,
-        delegator: str,
-        netuid: int, 
-        hotkey: str, 
-        amount: Balance, 
-        use_era: Optional[bool] = None,
-    ) -> tuple[bool, str]:
-        """
-        Add stake to a subnet.
-        
-        Args:
-            proxy_wallet: Proxy wallet
-            netuid: Network/subnet ID
-            hotkey: Hotkey address
-            amount: Amount to stake
-            tolerance: Tolerance for stake amount
-            allow_partial: Whether to allow partial staking
+            price_with_tolerance: Max acceptable alpha price (rao). None = no limit.
+            allow_partial: Whether to allow partial staking (only used with a limit)
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
         self.init_runtime()
-        call = self.substrate.compose_call(
-            call_module='SubtensorModule',
-            call_function='add_stake',
-            call_params={
-                "hotkey": hotkey,
-                "netuid": netuid,
-                "amount_staked": amount.rao,
-            }
-        )
+        if price_with_tolerance is not None:
+            call = self.substrate.compose_call(
+                call_module='SubtensorModule',
+                call_function='add_stake_limit',
+                call_params={
+                    "hotkey": hotkey,
+                    "netuid": netuid,
+                    "amount_staked": amount.rao,
+                    "limit_price": price_with_tolerance,
+                    "allow_partial": allow_partial,
+                }
+            )
+        else:
+            call = self.substrate.compose_call(
+                call_module='SubtensorModule',
+                call_function='add_stake',
+                call_params={
+                    "hotkey": hotkey,
+                    "netuid": netuid,
+                    "amount_staked": amount.rao,
+                }
+            )
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
-        
         if is_success:
             return True, f"Stake added successfully"
         else:
             return False, f"Error: {error_message}"
 
     def remove_stake(
-        self, 
+        self,
         proxy_wallet: bt.Wallet,
         delegator: str,
         netuid: int,
         hotkey: str,
         amount: Balance,
-        price_with_tolerance: int,
+        price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
         """
         Remove stake from a subnet.
-        
+
+        When ``price_with_tolerance`` is provided, the MEV-shielded limit-price
+        extrinsic (``remove_stake_limit``) is used: the extrinsic reverts if the
+        alpha price has moved below the limit at execution time, so a sandwich
+        attack cannot force a fill at a depressed price. When it is ``None``, the
+        plain ``remove_stake`` extrinsic is used with no price protection.
+
         Args:
             proxy_wallet: Proxy wallet
+            delegator: Delegator (real) coldkey address
             netuid: Network/subnet ID
             hotkey: Hotkey address
             amount: Amount to unstake (if not using --all)
-            price_with_tolerance: Price with tolerance
-            allow_partial: Whether to allow partial unstaking
+            price_with_tolerance: Min acceptable alpha price (rao). None = no limit.
+            allow_partial: Whether to allow partial unstaking (only used with a limit)
             use_era: Whether to use era parameter (overrides instance default if provided)
         """
         self.init_runtime()
-        call = self.substrate.compose_call(
-            call_module='SubtensorModule',
-            call_function='remove_stake_limit',
-            call_params={
-                "hotkey": hotkey,
-                "netuid": netuid,
-                "amount_unstaked": amount.rao - 1,
-                "limit_price": price_with_tolerance,
-                "allow_partial": allow_partial,
-            }
-        )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
-        if is_success:
-            return True, f"Stake removed successfully"
+        if price_with_tolerance is not None:
+            call = self.substrate.compose_call(
+                call_module='SubtensorModule',
+                call_function='remove_stake_limit',
+                call_params={
+                    "hotkey": hotkey,
+                    "netuid": netuid,
+                    "amount_unstaked": amount.rao - 1,
+                    "limit_price": price_with_tolerance,
+                    "allow_partial": allow_partial,
+                }
+            )
         else:
-            return False, f"Error: {error_message}"
-            
-    def remove_stake_not_limit(
-        self, 
-        proxy_wallet: bt.Wallet,
-        delegator: str,
-        netuid: int,
-        hotkey: str,
-        amount: Balance,
-        use_era: Optional[bool] = None,
-    ) -> tuple[bool, str]:
-        """
-        Remove stake from a subnet.
-        
-        Args:
-            proxy_wallet: Proxy wallet
-            netuid: Network/subnet ID
-            hotkey: Hotkey address
-            amount: Amount to unstake (if not using --all)
-            use_era: Whether to use era parameter (overrides instance default if provided)
-        """
-        self.init_runtime()
-        print(f"Remove stake not limit: {amount.rao - 1}")
-        call = self.substrate.compose_call(
-            call_module='SubtensorModule',
-            call_function='remove_stake',
-            call_params={
-                "hotkey": hotkey,
-                "netuid": netuid,
-                "amount_unstaked": amount.rao - 1,
-            }
-        )
+            call = self.substrate.compose_call(
+                call_module='SubtensorModule',
+                call_function='remove_stake',
+                call_params={
+                    "hotkey": hotkey,
+                    "netuid": netuid,
+                    "amount_unstaked": amount.rao - 1,
+                }
+            )
         is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
         if is_success:
             return True, f"Stake removed successfully"
