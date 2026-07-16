@@ -9,9 +9,6 @@ from utils.stake_list import get_stake_custom
 
 DEFAULT_WAIT_FOR_INCLUSION = True
 DEFAULT_WAIT_FOR_FINALIZATION = False
-
-# Mortal era period (in blocks) the extrinsic is valid for. Must be a power of two.
-# details https://paritytech.github.io/polkadot-sdk/master/src/sp_runtime/generic/era.rs.html#65-72
 DEFAULT_PERIOD = 128
 
 class Proxy:
@@ -86,14 +83,11 @@ class Proxy:
         wait_for_inclusion: bool = DEFAULT_WAIT_FOR_INCLUSION,
         wait_for_finalization: bool = DEFAULT_WAIT_FOR_FINALIZATION,
     ) -> tuple[bool, str]:
-        try:
-            receipt = self.substrate.submit_extrinsic(
-                extrinsic,
-                wait_for_inclusion=wait_for_inclusion,
-                wait_for_finalization=wait_for_finalization,
-            )
-        except Exception as e:
-            return False, str(e)
+        receipt = self.substrate.submit_extrinsic(
+            extrinsic,
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+        )
         return receipt.is_success, str(receipt.error_message)
 
     def add_stake(
@@ -130,11 +124,7 @@ class Proxy:
                     "amount_staked": amount.rao,
                 }
             )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, period=period)
-        if is_success:
-            return True, f"Stake added successfully"
-        else:
-            return False, f"Error: {error_message}"
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period)
 
     def remove_stake(
         self,
@@ -170,39 +160,7 @@ class Proxy:
                     "amount_unstaked": amount.rao - 1,
                 }
             )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, period=period)
-        if is_success:
-            return True, f"Stake removed successfully"
-        else:
-            return False, f"Error: {error_message}"
-
-    def burned_register(
-        self,
-        proxy_wallet: bt.Wallet,
-        delegator: str,
-        hotkey: str,
-        netuid: int,
-        period: Optional[int] = None,
-    ) -> tuple[bool, str]:
-        print(f"Proxy wallet: {proxy_wallet}")
-        print(f"Delegator: {delegator}")
-        print(f"Hotkey: {hotkey}")
-        print(f"Netuid: {netuid}")
-        self.init_runtime()
-        call = self.substrate.compose_call(
-            call_module='SubtensorModule',
-            call_function='burned_register',
-            call_params={
-                'netuid': netuid,
-                'hotkey': hotkey,
-            }
-        )
-        print(f"Call: {call}")
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, 'Registration', period=period)
-        print(f"Register successfully: {is_success}")
-        print(f"Error: {error_message}")
-        return is_success, error_message
-
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period)
 
 
     def move_stake(
@@ -216,19 +174,7 @@ class Proxy:
         amount: Balance,
         period: Optional[int] = None,
     ) -> tuple[bool, str]:
-        balance = get_stake_custom(
-            self.subtensor,
-            coldkey_ss58=delegator,
-            hotkey_ss58=origin_hotkey,
-            netuid=origin_netuid,
-        )
-        print(f"Current alpha balance on netuid {origin_netuid}: {balance}")
-
-        if amount.rao > balance.rao:
-            return False, f"Error: Amount to swap is greater than current balance"
-
         self.init_runtime()
-
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
             call_function='move_stake',
@@ -240,18 +186,8 @@ class Proxy:
                 'alpha_amount': amount.rao - 1,
             }
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, period=period)
-        new_balance = get_stake_custom(
-            self.subtensor,
-            coldkey_ss58=delegator,
-            hotkey_ss58=origin_hotkey,
-            netuid=origin_netuid,
-        )
-        print(f"New alpha balance on netuid {origin_netuid}: {new_balance}")
-        if new_balance.rao < balance.rao:
-            return True, f"Stake swapped successfully"
-        else:
-            return False, f"Error: {error_message}"
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period)
+        
 
     def _do_proxy_call(
         self,
@@ -261,9 +197,6 @@ class Proxy:
         proxy_type: str = 'Staking',
         period: Optional[int] = None,
     ) -> tuple[bool, str]:
-        print(f"Proxy wallet: {proxy_wallet}")
-        print(f"Delegator: {delegator}")
-        print(f"Call: {call}")
         proxy_call = self.substrate.compose_call(
             call_module='Proxy',
             call_function='proxy',
@@ -277,19 +210,12 @@ class Proxy:
         if period is not None:
             kwargs["era"] = {"period": period}
         extrinsic = self.substrate.create_signed_extrinsic(**kwargs)
-        try:
-            receipt = self.substrate.submit_extrinsic(
-                extrinsic,
-                wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
-                wait_for_finalization=DEFAULT_WAIT_FOR_FINALIZATION,
-            )
-        except Exception as e:
-            error_message = str(e)
-            return False, error_message
-
-        is_success = receipt.is_success
-        error_message = receipt.error_message
-        return is_success, str(error_message)
+        receipt = self.substrate.submit_extrinsic(
+            extrinsic,
+            wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
+            wait_for_finalization=DEFAULT_WAIT_FOR_FINALIZATION,
+        )
+        return receipt.is_success, receipt.error_message
 
     def _batch_proxy_calls(
         self,
@@ -322,18 +248,13 @@ class Proxy:
         if period is not None:
             kwargs["era"] = {"period": period}
         extrinsic = self.substrate.create_signed_extrinsic(**kwargs)
-        try:
-            receipt = self.substrate.submit_extrinsic(
-                extrinsic,
-                wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
-                wait_for_finalization=DEFAULT_WAIT_FOR_FINALIZATION,
-            )
-        except Exception as e:
-            return False, str(e)
-        is_success = receipt.is_success
-        error_message = receipt.error_message
-        return is_success, str(error_message)
-
+        receipt = self.substrate.submit_extrinsic(
+            extrinsic,
+            wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
+            wait_for_finalization=DEFAULT_WAIT_FOR_FINALIZATION,
+        )
+        return receipt.is_success, receipt.error_message
+        
     def batch_stake_ops(
         self,
         proxy_wallet: bt.Wallet,
