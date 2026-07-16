@@ -12,17 +12,10 @@ DEFAULT_WAIT_FOR_FINALIZATION = False
 
 class Proxy:
     def __init__(self, network: str, use_era: bool = True):
-        """
-        Initialize the RonProxy object.
-        
-        Args:
-            network: Network name
-            use_era: Whether to use era parameter in extrinsic creation
-        """
         self.network = network
         self.use_era = use_era
         self.subtensor = bt.Subtensor(network=network)
-        
+
 
     def init_runtime(self):
         self.substrate = SubstrateInterface(
@@ -113,25 +106,6 @@ class Proxy:
         allow_partial: bool = False,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
-        """
-        Add stake to a subnet.
-
-        When ``price_with_tolerance`` is provided, the MEV-shielded limit-price
-        extrinsic (``add_stake_limit``) is used: the extrinsic reverts if the
-        alpha price has moved past the limit at execution time, so a sandwich
-        attack cannot force a fill at an inflated price. When it is ``None``, the
-        plain ``add_stake`` extrinsic is used with no price protection.
-
-        Args:
-            proxy_wallet: Proxy wallet
-            delegator: Delegator (real) coldkey address
-            netuid: Network/subnet ID
-            hotkey: Hotkey address
-            amount: Amount to stake
-            price_with_tolerance: Max acceptable alpha price (rao). None = no limit.
-            allow_partial: Whether to allow partial staking (only used with a limit)
-            use_era: Whether to use era parameter (overrides instance default if provided)
-        """
         self.init_runtime()
         if price_with_tolerance is not None:
             call = self.substrate.compose_call(
@@ -172,25 +146,6 @@ class Proxy:
         allow_partial: bool = False,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
-        """
-        Remove stake from a subnet.
-
-        When ``price_with_tolerance`` is provided, the MEV-shielded limit-price
-        extrinsic (``remove_stake_limit``) is used: the extrinsic reverts if the
-        alpha price has moved below the limit at execution time, so a sandwich
-        attack cannot force a fill at a depressed price. When it is ``None``, the
-        plain ``remove_stake`` extrinsic is used with no price protection.
-
-        Args:
-            proxy_wallet: Proxy wallet
-            delegator: Delegator (real) coldkey address
-            netuid: Network/subnet ID
-            hotkey: Hotkey address
-            amount: Amount to unstake (if not using --all)
-            price_with_tolerance: Min acceptable alpha price (rao). None = no limit.
-            allow_partial: Whether to allow partial unstaking (only used with a limit)
-            use_era: Whether to use era parameter (overrides instance default if provided)
-        """
         self.init_runtime()
         if price_with_tolerance is not None:
             call = self.substrate.compose_call(
@@ -228,16 +183,6 @@ class Proxy:
         netuid: int,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
-        """
-        Do burned register.
-        
-        Args:
-            proxy_wallet: Proxy wallet
-            delegator: Delegator address
-            hotkey: Hotkey address
-            netuid: Subnet ID
-            use_era: Whether to use era parameter (overrides instance default if provided)
-        """
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
         print(f"Hotkey: {hotkey}")
@@ -257,32 +202,19 @@ class Proxy:
         print(f"Error: {error_message}")
         return is_success, error_message
 
-    
+
 
     def move_stake(
-        self, 
+        self,
         proxy_wallet: bt.Wallet,
         delegator: str,
-        origin_hotkey: str, 
-        destination_hotkey: str, 
-        origin_netuid: int, 
-        destination_netuid: int, 
+        origin_hotkey: str,
+        destination_hotkey: str,
+        origin_netuid: int,
+        destination_netuid: int,
         amount: Balance,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
-        """
-        Move stake between validators
-        
-        Args:
-            proxy_wallet: Proxy wallet
-            delegator: Delegator address
-            origin_hotkey: Origin hotkey address
-            destination_hotkey: Destination hotkey address
-            origin_netuid: Source subnet ID
-            destination_netuid: Destination subnet ID
-            amount: Amount to move
-            use_era: Whether to use era parameter (overrides instance default if provided)
-        """
         balance = get_stake_custom(
             self.subtensor,
             coldkey_ss58=delegator,
@@ -290,12 +222,12 @@ class Proxy:
             netuid=origin_netuid,
         )
         print(f"Current alpha balance on netuid {origin_netuid}: {balance}")
-        
+
         if amount.rao > balance.rao:
             return False, f"Error: Amount to swap is greater than current balance"
 
         self.init_runtime()
-        
+
         call = self.substrate.compose_call(
             call_module='SubtensorModule',
             call_function='move_stake',
@@ -340,7 +272,6 @@ class Proxy:
                 'call': call,
             }
         )
-        # Use provided use_era if given, otherwise use instance default
         use_era_value = use_era if use_era is not None else self.use_era
         if use_era_value:
             extrinsic = self.substrate.create_signed_extrinsic(
@@ -362,7 +293,7 @@ class Proxy:
         except Exception as e:
             error_message = str(e)
             return False, error_message
-        
+
         is_success = receipt.is_success
         error_message = receipt.error_message
         return is_success, str(error_message)
@@ -374,18 +305,6 @@ class Proxy:
         calls: list,
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
-        """
-        Execute multiple proxy calls in a single extrinsic via Utility.batch.
-
-        Args:
-            proxy_wallet: Proxy wallet
-            delegator: Delegator address
-            calls: List of composed inner calls (e.g. add_stake / remove_stake)
-            use_era: Whether to use era parameter
-
-        Returns:
-            (success, error_message)
-        """
         if not calls:
             return False, "No calls to batch"
         self.init_runtime()
@@ -437,11 +356,6 @@ class Proxy:
         operations: List[Tuple[str, int, str, int, Optional[int], bool]],
         use_era: Optional[bool] = None,
     ) -> tuple[bool, str]:
-        """
-        Run multiple stake and/or unstake operations in one extrinsic.
-        Each op: (action, netuid, hotkey_ss58, amount_rao, limit_price, allow_partial).
-        limit_price None = use add_stake/remove_stake; else use add_stake_limit/remove_stake_limit.
-        """
         self.init_runtime()
         calls = []
         for item in operations:
@@ -471,7 +385,7 @@ class Proxy:
                             'amount_staked': amount_rao,
                         }
                     )
-            else:  # unstake
+            else:
                 amount_unstaked = max(0, amount_rao - 1)
                 if limit_price is not None:
                     call = self.substrate.compose_call(
