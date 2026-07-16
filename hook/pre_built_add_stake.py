@@ -66,7 +66,7 @@ def rebuild_prebuilt_extrinsics(force: bool = False):
         new_extrinsics[netuid] = proxy.create_signed_proxy_extrinsic(
             proxy_wallet=wallet,
             proxy_call=proxy_call,
-            use_era=PREBUILT_USE_ERA,
+            period=64 if PREBUILT_USE_ERA else 0,
         )
 
     _prebuilt_extrinsics = new_extrinsics

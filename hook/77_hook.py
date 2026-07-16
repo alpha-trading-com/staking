@@ -53,7 +53,7 @@ def add_stake_limit():
         hotkey=settings.DEFAULT_DEST_HOTKEY,
         amount=bt.Balance.from_tao(amount),
         price_with_tolerance=limit_price,
-        use_era=settings.USE_ERA,
+        period=1 if settings.USE_ERA else 0,
     )
     if result:
         print(f"Stake added: {amount} TAO to subnet {NETUID_77} (limit_price={limit_price})")

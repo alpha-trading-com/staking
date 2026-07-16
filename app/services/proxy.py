@@ -60,8 +60,7 @@ class Proxy:
         proxy_wallet: bt.Wallet,
         proxy_call,
         nonce: Optional[int] = None,
-        use_era: bool = True,
-        era_period: int = 64,
+        period: int = 64,
         block_number: Optional[int] = None,
     ):
         self.init_runtime()
@@ -71,10 +70,10 @@ class Proxy:
         }
         if nonce is not None:
             kwargs["nonce"] = nonce
-        if use_era:
+        if period:
             if block_number is None:
                 block_number = self.substrate.get_block_number(None)
-            kwargs["era"] = {"period": era_period, "current": block_number}
+            kwargs["era"] = {"period": period, "current": block_number}
         return self.substrate.create_signed_extrinsic(**kwargs)
 
     def submit_prepared_extrinsic(
@@ -102,7 +101,7 @@ class Proxy:
         amount: Balance,
         price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
-        use_era: bool = True,
+        period: int = 1,
     ) -> tuple[bool, str]:
         self.init_runtime()
         if price_with_tolerance is not None:
@@ -127,7 +126,7 @@ class Proxy:
                     "amount_staked": amount.rao,
                 }
             )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, period=period)
         if is_success:
             return True, f"Stake added successfully"
         else:
@@ -142,7 +141,7 @@ class Proxy:
         amount: Balance,
         price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
-        use_era: bool = True,
+        period: int = 1,
     ) -> tuple[bool, str]:
         self.init_runtime()
         if price_with_tolerance is not None:
@@ -167,7 +166,7 @@ class Proxy:
                     "amount_unstaked": amount.rao - 1,
                 }
             )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, period=period)
         if is_success:
             return True, f"Stake removed successfully"
         else:
@@ -179,7 +178,7 @@ class Proxy:
         delegator: str,
         hotkey: str,
         netuid: int,
-        use_era: bool = True,
+        period: int = 1,
     ) -> tuple[bool, str]:
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
@@ -195,7 +194,7 @@ class Proxy:
             }
         )
         print(f"Call: {call}")
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, 'Registration', use_era=use_era)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, 'Registration', period=period)
         print(f"Register successfully: {is_success}")
         print(f"Error: {error_message}")
         return is_success, error_message
@@ -211,7 +210,7 @@ class Proxy:
         origin_netuid: int,
         destination_netuid: int,
         amount: Balance,
-        use_era: bool = True,
+        period: int = 1,
     ) -> tuple[bool, str]:
         balance = get_stake_custom(
             self.subtensor,
@@ -237,7 +236,7 @@ class Proxy:
                 'alpha_amount': amount.rao - 1,
             }
         )
-        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, use_era=use_era)
+        is_success, error_message = self._do_proxy_call(proxy_wallet, delegator, call, period=period)
         new_balance = get_stake_custom(
             self.subtensor,
             coldkey_ss58=delegator,
@@ -256,7 +255,7 @@ class Proxy:
         delegator: str,
         call,
         proxy_type: str = 'Staking',
-        use_era: bool = True,
+        period: int = 1,
     ) -> tuple[bool, str]:
         print(f"Proxy wallet: {proxy_wallet}")
         print(f"Delegator: {delegator}")
@@ -270,11 +269,11 @@ class Proxy:
                 'call': call,
             }
         )
-        if use_era:
+        if period:
             extrinsic = self.substrate.create_signed_extrinsic(
                 call=proxy_call,
                 keypair=proxy_wallet.coldkey,
-                era={"period": 1},
+                era={"period": period},
             )
         else:
             extrinsic = self.substrate.create_signed_extrinsic(
@@ -300,7 +299,7 @@ class Proxy:
         proxy_wallet: bt.Wallet,
         delegator: str,
         calls: list,
-        use_era: bool = True,
+        period: int = 64,
     ) -> tuple[bool, str]:
         if not calls:
             return False, "No calls to batch"
@@ -322,11 +321,11 @@ class Proxy:
             call_function='batch',
             call_params={'calls': proxy_calls}
         )
-        if use_era:
+        if period:
             extrinsic = self.substrate.create_signed_extrinsic(
                 call=batch_call,
                 keypair=proxy_wallet.coldkey,
-                era={"period": 64},
+                era={"period": period},
             )
         else:
             extrinsic = self.substrate.create_signed_extrinsic(
@@ -350,7 +349,7 @@ class Proxy:
         proxy_wallet: bt.Wallet,
         delegator: str,
         operations: List[Tuple[str, int, str, int, Optional[int], bool]],
-        use_era: bool = True,
+        period: int = 64,
     ) -> tuple[bool, str]:
         self.init_runtime()
         calls = []
@@ -406,7 +405,7 @@ class Proxy:
                         }
                     )
             calls.append(call)
-        return self._batch_proxy_calls(proxy_wallet, delegator, calls, use_era=use_era)
+        return self._batch_proxy_calls(proxy_wallet, delegator, calls, period=period)
 
 
 if __name__ == "__main__":

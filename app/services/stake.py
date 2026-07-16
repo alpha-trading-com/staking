@@ -125,7 +125,7 @@ class StakeService:
                     hotkey=dest_hotkey,
                     price_with_tolerance=price_with_tolerance,
                     allow_partial=allow_partial,
-                    use_era=use_era,
+                    period=1 if use_era else 0,
                 )
                 
                 if result:
@@ -187,7 +187,7 @@ class StakeService:
                     netuid=netuid,
                     hotkey=dest_hotkey,
                     price_with_tolerance=None,
-                    use_era=use_era,
+                    period=1 if use_era else 0,
                 )
                 if result:
                     success = True
@@ -301,7 +301,7 @@ class StakeService:
                     hotkey=dest_hotkey,
                     price_with_tolerance=price_with_tolerance,
                     allow_partial=allow_partial,
-                    use_era=use_era,
+                    period=1 if use_era else 0,
                 )
                 if result:
                     success = True
@@ -393,7 +393,7 @@ class StakeService:
                     netuid=netuid,
                     hotkey=dest_hotkey,
                     price_with_tolerance=None,
-                    use_era=use_era,
+                    period=1 if use_era else 0,
                 )
                 if result:
                     success = True
@@ -505,7 +505,7 @@ class StakeService:
                 proxy_wallet=wallet,
                 delegator=delegator,
                 operations=rao_ops,
-                use_era=use_era,
+                period=64 if use_era else 0,
             )
             return {"success": success, "error": msg}
         except Exception as e:
@@ -606,7 +606,7 @@ class StakeService:
                     destination_hotkey=destination_hotkey,
                     origin_netuid=origin_netuid,
                     destination_netuid=destination_netuid,
-                    use_era=use_era,
+                    period=1 if use_era else 0,
                 )
                 if result:
                     success = True
