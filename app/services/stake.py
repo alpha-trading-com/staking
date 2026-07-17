@@ -622,3 +622,4 @@ class StakeService:
         }
 
 stake_service = StakeService(wallets)
+print("here")

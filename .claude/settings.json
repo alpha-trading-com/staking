@@ -5,7 +5,9 @@
       "Bash(sed -i 's/        use_era=settings.USE_ERA,/        period=1 if settings.USE_ERA else 0,/' hook/77_hook.py)",
       "Bash(sed -i 's/            use_era=PREBUILT_USE_ERA,/            period=64 if PREBUILT_USE_ERA else 0,/' hook/pre_built_add_stake.py)",
       "Bash(python -c \"import ast; ast.parse\\(open\\('app/services/proxy.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('/root/staking/app/services/proxy.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('/root/staking/app/services/proxy.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(curl -s -m 10 http://localhost:10290/health)",
+      "Bash(curl -s -m 20 -i http://localhost:10290/)"
     ]
   }
 }

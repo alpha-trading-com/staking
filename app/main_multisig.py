@@ -30,6 +30,7 @@ def health():
 
 @app.get("/")
 def read_root(request: fastapi.Request, username: str = Depends(get_current_username)):
+    print("hereerre")
     subtensor = stake_service.subtensor
     def get_balance_html():
         balance_html = ""
@@ -42,13 +43,14 @@ def read_root(request: fastapi.Request, username: str = Depends(get_current_user
                     <div class="balance-amount">{balance} TAO</div>
                 </div>
             """
+        print("heredddsfds")
         return balance_html
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request, 
-            "balance_html": get_balance_html(), 
+            "balance_html": get_balance_html(),
             "wallet_names": settings.WALLET_NAMES,
             "delegators": settings.DELEGATORS,
         }
@@ -178,8 +180,9 @@ def get_stake_info_json(
 @app.get("/subnets")
 def subnets_page(request: fastapi.Request, username: str = Depends(get_current_username)):
     return templates.TemplateResponse(
+        request,
         "subnets_bubble.html",
-        {"request": request}
+        {}
     )
 
 @app.get("/subnets_data")
