@@ -520,6 +520,8 @@
             <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" id="useEra" class="form-checkbox h-4 w-4 text-blue-600" checked>
                 <label for="useEra" class="text-sm text-red-500 mb-0" style="white-space: nowrap;">Use Era</label>
+                <input type="checkbox" id="mevProtection" class="form-checkbox h-4 w-4 text-blue-600">
+                <label for="mevProtection" class="text-sm text-red-500 mb-0" style="white-space: nowrap;">MEV Protection</label>
                 <button class="btn" onclick="resetAllInputs()" style="padding: 0.35rem 0.8rem; font-size: 0.9rem; background: #dc2626;">Reset All</button>
             </div>
         </div>
@@ -886,6 +888,7 @@
                 
                 // Global settings
                 useEra: document.getElementById('useEra')?.checked !== undefined ? document.getElementById('useEra').checked : true,
+                mevProtection: document.getElementById('mevProtection')?.checked !== undefined ? document.getElementById('mevProtection').checked : false,
                 
                 // Active tab - find which tab is currently active
                 activeTab: (() => {
@@ -990,6 +993,11 @@
                 // Restore useEra checkbox
                 if (inputs.useEra !== undefined && document.getElementById('useEra')) {
                     document.getElementById('useEra').checked = inputs.useEra;
+                }
+
+                // Restore mevProtection checkbox
+                if (inputs.mevProtection !== undefined && document.getElementById('mevProtection')) {
+                    document.getElementById('mevProtection').checked = inputs.mevProtection;
                 }
                 
                 // Restore calculator tab inputs
@@ -1099,7 +1107,8 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+                const mevProtection = document.getElementById('mevProtection').checked;
+                let url = `/stake?wallet_name=${walletName}&tao_amount=${amount}&netuid=${netuid}&rate_tolerance=${rateTolerance}&dest_hotkey=${validatorHotkey}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (retries) {
                     url += `&retries=${retries}`;
                 }
@@ -1141,7 +1150,8 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+                const mevProtection = document.getElementById('mevProtection').checked;
+                let url = `/unstake?wallet_name=${walletName}&netuid=${netuid}&dest_hotkey=${validatorHotkey}&rate_tolerance=${rateTolerance}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (amount) {
                     url += `&amount=${amount}`;
                 }
@@ -1181,7 +1191,8 @@
 
             try {
                 setButtonLoading(button, true);
-                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}&use_era=${useEra}`;
+                const mevProtection = document.getElementById('mevProtection').checked;
+                let url = `/move_stake?wallet_name=${walletName}&origin_hotkey=${originHotkey}&destination_hotkey=${destinationHotkey}&origin_netuid=${originNetuid}&destination_netuid=${destinationNetuid}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 if (amount) url += `&amount=${amount}`;
                 if (retries) url += `&retries=${retries}`;
 
@@ -1233,6 +1244,7 @@
         async function submitBatch() {
             const walletName = document.getElementById('batchWalletName').value;
             const useEra = document.getElementById('useEra').checked;
+            const mevProtection = document.getElementById('mevProtection').checked;
             const rateToleranceVal = document.getElementById('batchRateTolerance')?.value?.trim();
             const rateTolerance = rateToleranceVal === '' ? null : parseFloat(rateToleranceVal);
             const minToleranceStaking = document.getElementById('batchMinToleranceStaking')?.checked ?? true;
@@ -1274,7 +1286,8 @@
                     rate_tolerance: rateTolerance,
                     min_tolerance_staking: minToleranceStaking,
                     min_tolerance_unstaking: minToleranceUnstaking,
-                    allow_partial: allowPartial
+                    allow_partial: allowPartial,
+                    mev_protection: mevProtection
                 };
                 const response = await fetch('/batch', {
                     method: 'POST',
@@ -1545,8 +1558,9 @@
                 return;
             }
 
+            const mevProtection = document.getElementById('mevProtection').checked;
             const baseUrl = getBaseUrl();
-            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/stake?wallet_name=${encodeURIComponent(walletName)}&tao_amount=${encodeURIComponent(amount)}&netuid=${encodeURIComponent(netuid)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/stake?wallet_name=${encodeURIComponent(walletName)}&tao_amount=${encodeURIComponent(amount)}&netuid=${encodeURIComponent(netuid)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&min_tolerance_staking=${minToleranceStaking}&allow_partial=${allowPartial}&use_era=${useEra}&mev_protection=${mevProtection}`;
             
             if (retries) {
                 curlCmd += `&retries=${encodeURIComponent(retries)}`;
@@ -1597,8 +1611,9 @@
                 return;
             }
 
+            const mevProtection = document.getElementById('mevProtection').checked;
             const baseUrl = getBaseUrl();
-            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/unstake?wallet_name=${encodeURIComponent(walletName)}&netuid=${encodeURIComponent(netuid)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/unstake?wallet_name=${encodeURIComponent(walletName)}&netuid=${encodeURIComponent(netuid)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}&mev_protection=${mevProtection}`;
             
             if (amount) {
                 curlCmd += `&amount=${encodeURIComponent(amount)}`;
@@ -1652,8 +1667,9 @@
                 return;
             }
 
+            const mevProtection = document.getElementById('mevProtection').checked;
             const baseUrl = getBaseUrl();
-            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/move_stake?wallet_name=${encodeURIComponent(walletName)}&origin_netuid=${encodeURIComponent(originNetuid)}&destination_netuid=${encodeURIComponent(destinationNetuid)}&origin_hotkey=${encodeURIComponent(originHotkey)}&destination_hotkey=${encodeURIComponent(destinationHotkey)}&use_era=${useEra}`;
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/move_stake?wallet_name=${encodeURIComponent(walletName)}&origin_netuid=${encodeURIComponent(originNetuid)}&destination_netuid=${encodeURIComponent(destinationNetuid)}&origin_hotkey=${encodeURIComponent(originHotkey)}&destination_hotkey=${encodeURIComponent(destinationHotkey)}&use_era=${useEra}&mev_protection=${mevProtection}`;
             
             if (amount) {
                 curlCmd += `&amount=${encodeURIComponent(amount)}`;
@@ -1847,9 +1863,10 @@
             const minToleranceUnstaking = document.getElementById('minToleranceUnstaking')?.checked || false;
             const allowPartial = document.getElementById('allowPartialUnstaking')?.checked || false;
             const useEra = document.getElementById('useEra')?.checked || false;
+            const mevProtection = document.getElementById('mevProtection')?.checked || false;
             try {
                 setButtonLoading(buttonEl, true);
-                const url = `/unstake?wallet_name=${encodeURIComponent(walletName)}&netuid=${encodeURIComponent(netuid)}&dest_hotkey=${encodeURIComponent(hotkey)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}`;
+                const url = `/unstake?wallet_name=${encodeURIComponent(walletName)}&netuid=${encodeURIComponent(netuid)}&dest_hotkey=${encodeURIComponent(hotkey)}&rate_tolerance=${encodeURIComponent(rateTolerance)}&min_tolerance_unstaking=${minToleranceUnstaking}&allow_partial=${allowPartial}&use_era=${useEra}&mev_protection=${mevProtection}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 if (!response.ok) {
@@ -1952,7 +1969,7 @@
                 'unstakeValidatorHotkey', 'unstakeRetries',
                 'moveWalletName', 'moveAmount', 'originNetuid', 
                 'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
-                'calcAmount', 'calcNetuid', 'toleranceOffset', 'useEra'
+                'calcAmount', 'calcNetuid', 'toleranceOffset', 'useEra', 'mevProtection'
             ];
             
             inputIds.forEach(id => {

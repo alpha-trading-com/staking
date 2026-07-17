@@ -25,6 +25,7 @@ class BatchRequest(BaseModel):
     min_tolerance_staking: Optional[bool] = None
     min_tolerance_unstaking: Optional[bool] = None
     allow_partial: bool = False
+    mev_protection: Optional[bool] = None
 
 
 router = APIRouter()
@@ -58,6 +59,7 @@ def stake(
     allow_partial: bool = False,
     retries: Optional[int] = None,
     use_era: Optional[bool] = None,
+    mev_protection: Optional[bool] = None,
     username: str = Depends(get_current_username)
 ):
     if dest_hotkey is None:
@@ -70,10 +72,10 @@ def stake(
         retries = settings.DEFAULT_RETRIES
     if use_era is None:
         use_era = settings.USE_ERA
-    
+
     # Validate retries parameter
     if retries < 1:
-        retries = 1    
+        retries = 1
 
     if rate_tolerance > 1.9:
         return stake_service.stake_not_limit(
@@ -82,9 +84,10 @@ def stake(
             wallet_name=wallet_name,
             dest_hotkey=dest_hotkey,
             retries=retries,
-            use_era=use_era
+            use_era=use_era,
+            mev_protection=mev_protection
         )
-    
+
     # Get wallet and delegator
     if wallet_name not in stake_service.wallets:
         return {
@@ -101,7 +104,8 @@ def stake(
         min_tolerance_staking=min_tolerance_staking,
         allow_partial=allow_partial,
         retries=retries,
-        use_era=use_era
+        use_era=use_era,
+        mev_protection=mev_protection
     )
 
 
@@ -116,6 +120,7 @@ def unstake(
     allow_partial: bool = False,
     retries: Optional[int] = None,
     use_era: Optional[bool] = None,
+    mev_protection: Optional[bool] = None,
     username: str = Depends(get_current_username)
 ):
     if dest_hotkey is None:
@@ -128,11 +133,11 @@ def unstake(
         retries = settings.DEFAULT_RETRIES
     if use_era is None:
         use_era = settings.USE_ERA
-    
+
     # Validate retries parameter
     if retries < 1:
-        retries = 1    
-    
+        retries = 1
+
     if rate_tolerance > 1.9:
         return stake_service.unstake_not_limit(
             netuid=netuid,
@@ -140,9 +145,10 @@ def unstake(
             amount=amount,
             dest_hotkey=dest_hotkey,
             retries=retries,
-            use_era=use_era
+            use_era=use_era,
+            mev_protection=mev_protection
         )
-    
+
     # Get wallet and delegator
     if wallet_name not in stake_service.wallets:
         return {
@@ -159,7 +165,8 @@ def unstake(
         min_tolerance_unstaking=min_tolerance_unstaking,
         allow_partial=allow_partial,
         retries=retries,
-        use_era=use_era
+        use_era=use_era,
+        mev_protection=mev_protection
     )
 
 @router.post("/batch")
@@ -186,6 +193,7 @@ def batch(
         min_tolerance_staking=body.min_tolerance_staking,
         min_tolerance_unstaking=body.min_tolerance_unstaking,
         allow_partial=body.allow_partial,
+        mev_protection=body.mev_protection,
     )
 
 
@@ -199,6 +207,7 @@ def move_stake(
     destination_hotkey: Optional[str] = None,
     retries: Optional[int] = None,
     use_era: Optional[bool] = None,
+    mev_protection: Optional[bool] = None,
     username: str = Depends(get_current_username)
 ):
     if origin_hotkey is None:
@@ -209,11 +218,11 @@ def move_stake(
         retries = settings.DEFAULT_RETRIES
     if use_era is None:
         use_era = settings.USE_ERA
-    
+
     # Validate retries parameter
     if retries < 1:
-        retries = 1    
-        
+        retries = 1
+
     return stake_service.move_stake(
         amount=amount,
         wallet_name=wallet_name,
@@ -222,6 +231,7 @@ def move_stake(
         origin_netuid=origin_netuid,
         destination_netuid=destination_netuid,
         retries=retries,
-        use_era=use_era
+        use_era=use_era,
+        mev_protection=mev_protection
     )
 

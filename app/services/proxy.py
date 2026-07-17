@@ -1,3 +1,4 @@
+from sys import stderr
 import bittensor as bt
 from bittensor.core.settings import DEFAULT_MEV_PROTECTION
 from bittensor.core.extrinsics.mev_shield import submit_encrypted_extrinsic
@@ -18,7 +19,6 @@ class Proxy:
     def __init__(self, network: str):
         self.network = network
         self.subtensor = bt.Subtensor(network=network)
-        self.subtensor.mev_submit_encrypted()
 
 
     def init_runtime(self):
@@ -214,27 +214,29 @@ class Proxy:
                 'call': call,
             }
         )
-        kwargs = {"call": proxy_call, "keypair": proxy_wallet.coldkey}
-        if period is not None:
-            kwargs["era"] = {"period": period}
-        extrinsic = self.substrate.create_signed_extrinsic(**kwargs)
-
+        print("test-mev")
         if mev_protection:
+            print("here mev protection", file=stderr, flush=True)
             extrinsic_response = submit_encrypted_extrinsic(
                 subtensor=self.subtensor,
                 wallet=proxy_wallet,
                 call=proxy_call,
-                period=period,
+                period=None,
                 raise_error=False,
                 wait_for_inclusion=True,
                 wait_for_finalization=False,
                 wait_for_revealed_execution=False,
             )
+            print(extrinsic_response.success, file=stderr, flush=True)
+            print(extrinsic_response.error, file=stderr, flush=True)
             return extrinsic_response.success, extrinsic_response.error
 
+        kwargs = {"call": proxy_call, "keypair": proxy_wallet.coldkey}
+        if period is not None:
+            kwargs["era"] = {"period": period}
+        extrinsic = self.substrate.create_signed_extrinsic(**kwargs)
 
-
-
+        
         receipt = self.substrate.submit_extrinsic(
             extrinsic,
             wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,

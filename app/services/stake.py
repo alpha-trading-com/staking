@@ -1,4 +1,6 @@
 import bittensor as bt
+import traceback
+from bittensor.core.settings import DEFAULT_MEV_PROTECTION
 from typing import Dict, Tuple, Optional, Any, List
 
 from app.core.config import settings
@@ -63,11 +65,12 @@ class StakeService:
         min_tolerance_staking: Optional[bool] = None,
         allow_partial: bool = False,
         retries: Optional[int] = None,
-        use_era: Optional[bool] = None
+        use_era: Optional[bool] = None,
+        mev_protection: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Execute staking operation with retry mechanism and error handling.
-        
+
         Args:
             tao_amount: Amount to stake in TAO
             netuid: Network/subnet ID
@@ -78,7 +81,8 @@ class StakeService:
             allow_partial: Whether to allow partial staking if full amount cannot be staked
             retries: Number of retry attempts
             use_era: Whether to use era parameter in extrinsic creation
-            
+            mev_protection: Whether to submit the extrinsic through MEV protection
+
         Returns:
             Dict containing success status, result, and min_tolerance
         """
@@ -92,9 +96,11 @@ class StakeService:
             retries = settings.DEFAULT_RETRIES
         if use_era is None:
             use_era = settings.USE_ERA
-        
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
+
         wallet, delegator = self.wallets[wallet_name]
-        
+
         # Calculate rate tolerance
         try:
             price_with_tolerance = calculate_stake_limit_price(
@@ -126,12 +132,14 @@ class StakeService:
                     price_with_tolerance=price_with_tolerance,
                     allow_partial=allow_partial,
                     period=1 if use_era else 0,
+                    mev_protection=mev_protection,
                 )
-                
+
                 if result:
                     success = True
                     break
             except Exception as e:
+                traceback.print_exc()
                 msg = str(e)
                 continue
         
@@ -149,11 +157,12 @@ class StakeService:
         wallet_name: str,
         dest_hotkey: Optional[str] = None,
         retries: Optional[int] = None,
-        use_era: Optional[bool] = None
+        use_era: Optional[bool] = None,
+        mev_protection: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Execute staking operation with retry mechanism and error handling.
-        
+
         Args:
             tao_amount: Amount to stake in TAO
             netuid: Network/subnet ID
@@ -161,7 +170,8 @@ class StakeService:
             dest_hotkey: Destination hotkey address
             retries: Number of retry attempts
             use_era: Whether to use era parameter in extrinsic creation
-            
+            mev_protection: Whether to submit the extrinsic through MEV protection
+
         Returns:
             Dict containing success status, result, and min_tolerance
         """
@@ -171,9 +181,11 @@ class StakeService:
             retries = settings.DEFAULT_RETRIES
         if use_era is None:
             use_era = settings.USE_ERA
-        
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
+
         wallet, delegator = self.wallets[wallet_name]
-        
+
         # Execute staking with retry mechanism
         success = False
         msg = None
@@ -188,11 +200,13 @@ class StakeService:
                     hotkey=dest_hotkey,
                     price_with_tolerance=None,
                     period=1 if use_era else 0,
+                    mev_protection=mev_protection,
                 )
                 if result:
                     success = True
                     break
             except Exception as e:
+                traceback.print_exc()
                 msg = str(e)
                 continue
         
@@ -212,11 +226,12 @@ class StakeService:
         min_tolerance_unstaking: Optional[bool] = None,
         allow_partial: bool = False,
         retries: Optional[int] = None,
-        use_era: Optional[bool] = None
+        use_era: Optional[bool] = None,
+        mev_protection: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Execute unstaking operation with retry mechanism and error handling.
-        
+
         Args:
             netuid: Network/subnet ID
             wallet_name: Name of the wallet to use
@@ -227,7 +242,8 @@ class StakeService:
             allow_partial: Whether to allow partial unstaking if full amount cannot be unstaked
             retries: Number of retry attempts
             use_era: Whether to use era parameter in extrinsic creation
-            
+            mev_protection: Whether to submit the extrinsic through MEV protection
+
         Returns:
             Dict containing success status, result, and min_tolerance
         """
@@ -241,9 +257,11 @@ class StakeService:
             retries = settings.DEFAULT_RETRIES
         if use_era is None:
             use_era = settings.USE_ERA
-        
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
+
         wallet, delegator = self.wallets[wallet_name]
-        
+
         # Determine amount to unstake
         if amount is None:
             # Unstake all available balance
@@ -302,12 +320,14 @@ class StakeService:
                     price_with_tolerance=price_with_tolerance,
                     allow_partial=allow_partial,
                     period=1 if use_era else 0,
+                    mev_protection=mev_protection,
                 )
                 if result:
                     success = True
-                    break     
+                    break
             except Exception as e:
-                msg = str(e)                
+                traceback.print_exc()
+                msg = str(e)
                 continue
         
         # This should never be reached, but required for type checking
@@ -324,11 +344,12 @@ class StakeService:
         amount: Optional[float] = None,
         dest_hotkey: Optional[str] = None,
         retries: Optional[int] = None,
-        use_era: Optional[bool] = None
+        use_era: Optional[bool] = None,
+        mev_protection: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Execute unstaking operation with retry mechanism and error handling.
-        
+
         Args:
             netuid: Network/subnet ID
             wallet_name: Name of the wallet to use
@@ -336,7 +357,8 @@ class StakeService:
             dest_hotkey: Destination hotkey address
             retries: Number of retry attempts
             use_era: Whether to use era parameter in extrinsic creation
-            
+            mev_protection: Whether to submit the extrinsic through MEV protection
+
         Returns:
             Dict containing success status, result, and min_tolerance
         """
@@ -346,7 +368,9 @@ class StakeService:
             retries = settings.DEFAULT_RETRIES
         if use_era is None:
             use_era = settings.USE_ERA
-        
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
+
         wallet, delegator = self.wallets[wallet_name]
         print("delegator: ", delegator)
         print("dest_hotkey: ", dest_hotkey)
@@ -394,20 +418,22 @@ class StakeService:
                     hotkey=dest_hotkey,
                     price_with_tolerance=None,
                     period=1 if use_era else 0,
+                    mev_protection=mev_protection,
                 )
                 if result:
                     success = True
                     break
             except Exception as e:
+                traceback.print_exc()
                 msg = str(e)
                 continue
-        
+
         # This should never be reached, but required for type checking
         return {
             "success": success,
             "error": msg
         }
-    
+
     def batch_ops(
         self,
         wallet_name: str,
@@ -417,6 +443,7 @@ class StakeService:
         min_tolerance_staking: Optional[bool] = None,
         min_tolerance_unstaking: Optional[bool] = None,
         allow_partial: bool = False,
+        mev_protection: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
         Run multiple stake and unstake operations in one extrinsic.
@@ -433,6 +460,8 @@ class StakeService:
             min_tolerance_staking = settings.DEFAULT_MIN_TOLERANCE
         if min_tolerance_unstaking is None:
             min_tolerance_unstaking = settings.DEFAULT_MIN_TOLERANCE
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
         if wallet_name not in self.wallets:
             return {"success": False, "error": f"Wallet '{wallet_name}' not found"}
         wallet, delegator = self.wallets[wallet_name]
@@ -506,6 +535,7 @@ class StakeService:
                 delegator=delegator,
                 operations=rao_ops,
                 period=64 if use_era else 0,
+                mev_protection=mev_protection,
             )
             return {"success": success, "error": msg}
         except Exception as e:
@@ -543,13 +573,14 @@ class StakeService:
         destination_netuid: int, 
         amount: Optional[float] = None, 
         origin_hotkey: Optional[str] = None, 
-        destination_hotkey: Optional[str] = None, 
+        destination_hotkey: Optional[str] = None,
         retries: Optional[int] = None,
-        use_era: Optional[bool] = None
+        use_era: Optional[bool] = None,
+        mev_protection: Optional[bool] = None
     ) -> Dict[str, Any]:
         """
         Execute move stake operation with retry mechanism and error handling.
-        
+
         Args:
             wallet_name: Name of the wallet to use
             origin_netuid: Source subnet ID
@@ -559,7 +590,8 @@ class StakeService:
             destination_hotkey: Destination hotkey address
             retries: Number of retry attempts
             use_era: Whether to use era parameter in extrinsic creation
-            
+            mev_protection: Whether to submit the extrinsic through MEV protection
+
         Returns:
             Dict containing success status and error message
         """
@@ -571,7 +603,9 @@ class StakeService:
             retries = settings.DEFAULT_RETRIES
         if use_era is None:
             use_era = settings.USE_ERA
-        
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
+
         wallet, delegator = self.wallets[wallet_name]
 
         if amount is None:
@@ -607,11 +641,13 @@ class StakeService:
                     origin_netuid=origin_netuid,
                     destination_netuid=destination_netuid,
                     period=1 if use_era else 0,
+                    mev_protection=mev_protection,
                 )
                 if result:
                     success = True
                     break
             except Exception as e:
+                traceback.print_exc()
                 msg = str(e)
                 continue
         
