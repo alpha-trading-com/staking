@@ -1,4 +1,6 @@
 import bittensor as bt
+from bittensor.core.settings import DEFAULT_MEV_PROTECTION
+from bittensor.core.extrinsics.mev_shield import submit_encrypted_extrinsic
 from pydantic_core.core_schema import int_schema
 from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import SubstrateRequestException
@@ -11,10 +13,12 @@ DEFAULT_WAIT_FOR_INCLUSION = True
 DEFAULT_WAIT_FOR_FINALIZATION = False
 DEFAULT_PERIOD = 128
 
+
 class Proxy:
     def __init__(self, network: str):
         self.network = network
         self.subtensor = bt.Subtensor(network=network)
+        self.subtensor.mev_submit_encrypted()
 
 
     def init_runtime(self):
@@ -100,6 +104,7 @@ class Proxy:
         price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
         period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION
     ) -> tuple[bool, str]:
         self.init_runtime()
         if price_with_tolerance is not None:
@@ -124,7 +129,7 @@ class Proxy:
                     "amount_staked": amount.rao,
                 }
             )
-        return self._do_proxy_call(proxy_wallet, delegator, call, period=period)
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period, mev_protection=mev_protection)
 
     def remove_stake(
         self,
@@ -136,6 +141,7 @@ class Proxy:
         price_with_tolerance: Optional[int] = None,
         allow_partial: bool = False,
         period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         self.init_runtime()
         if price_with_tolerance is not None:
@@ -160,7 +166,7 @@ class Proxy:
                     "amount_unstaked": amount.rao - 1,
                 }
             )
-        return self._do_proxy_call(proxy_wallet, delegator, call, period=period)
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period, mev_protection=mev_protection)
 
 
     def move_stake(
@@ -173,6 +179,7 @@ class Proxy:
         destination_netuid: int,
         amount: Balance,
         period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         self.init_runtime()
         call = self.substrate.compose_call(
@@ -186,8 +193,8 @@ class Proxy:
                 'alpha_amount': amount.rao - 1,
             }
         )
-        return self._do_proxy_call(proxy_wallet, delegator, call, period=period)
-        
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period, mev_protection=mev_protection)
+
 
     def _do_proxy_call(
         self,
@@ -196,6 +203,7 @@ class Proxy:
         call,
         proxy_type: str = 'Staking',
         period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         proxy_call = self.substrate.compose_call(
             call_module='Proxy',
@@ -210,6 +218,23 @@ class Proxy:
         if period is not None:
             kwargs["era"] = {"period": period}
         extrinsic = self.substrate.create_signed_extrinsic(**kwargs)
+
+        if mev_protection:
+            extrinsic_response = submit_encrypted_extrinsic(
+                subtensor=self.subtensor,
+                wallet=proxy_wallet,
+                call=proxy_call,
+                period=period,
+                raise_error=False,
+                wait_for_inclusion=True,
+                wait_for_finalization=False,
+                wait_for_revealed_execution=False,
+            )
+            return extrinsic_response.success, extrinsic_response.error
+
+
+
+
         receipt = self.substrate.submit_extrinsic(
             extrinsic,
             wait_for_inclusion=DEFAULT_WAIT_FOR_INCLUSION,
@@ -223,6 +248,7 @@ class Proxy:
         delegator: str,
         calls: list,
         period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         if not calls:
             return False, "No calls to batch"
@@ -244,6 +270,20 @@ class Proxy:
             call_function='batch',
             call_params={'calls': proxy_calls}
         )
+
+        if mev_protection:
+            extrinsic_response = submit_encrypted_extrinsic(
+                subtensor=self.subtensor,
+                wallet=proxy_wallet,
+                call=batch_call,
+                period=period,
+                raise_error=False,
+                wait_for_inclusion=True,
+                wait_for_finalization=False,
+                wait_for_revealed_execution=False,
+            )
+            return extrinsic_response.success, extrinsic_response.error
+
         kwargs = {"call": batch_call, "keypair": proxy_wallet.coldkey}
         if period is not None:
             kwargs["era"] = {"period": period}
@@ -261,6 +301,7 @@ class Proxy:
         delegator: str,
         operations: List[Tuple[str, int, str, int, Optional[int], bool]],
         period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION,
     ) -> tuple[bool, str]:
         self.init_runtime()
         calls = []
@@ -316,7 +357,7 @@ class Proxy:
                         }
                     )
             calls.append(call)
-        return self._batch_proxy_calls(proxy_wallet, delegator, calls, period=period)
+        return self._batch_proxy_calls(proxy_wallet, delegator, calls, period=period, mev_protection=mev_protection)
 
 
 if __name__ == "__main__":

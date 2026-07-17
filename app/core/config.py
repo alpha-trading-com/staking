@@ -59,10 +59,10 @@ class Settings(BaseModel):
     # DELEGATORS: List[str] = os.getenv("DELEGATORS", "").split(",")
     # WALLET_NAMES: List[str] = ["proxy"]
     # DELEGATORS: List[str] = ["5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
-    WALLET_NAMES: List[str] = ["proxy"]
-    DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
-    # WALLET_NAMES: List[str] = ["leo"]
-    # DELEGATORS: List[str] = ["5ESwpyuGxBmkXuQ1J8DqtmhFZQEDzLWKVup9xai567JRhvDN"]
+    # WALLET_NAMES: List[str] = ["proxy"]
+    # DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
+    WALLET_NAMES: List[str] = ["leo"]
+    DELEGATORS: List[str] = ["5ESwpyuGxBmkXuQ1J8DqtmhFZQEDzLWKVup9xai567JRhvDN"]
     
 
 
