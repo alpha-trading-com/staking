@@ -11,7 +11,7 @@ if str(_REPO_ROOT) not in sys.path:
 if str(_HOOK_DIR) not in sys.path:
     sys.path.insert(0, str(_HOOK_DIR))
 
-from pre_built_add_stake import add_stake, rebuild_prebuilt_extrinsics, _get_staking_context
+from pre_built_add_stake import add_stake, add_stake_encrypted, rebuild_prebuilt_extrinsics, _get_staking_context
 from hook_constants import (
     SEEN_MAX,
     EXTRINSIC_START_CALL,
@@ -128,8 +128,11 @@ def process_event(event: dict):
     if address in BLACK_LISTED_COLDKEYS:
         return
 
-    if event_type == EXTRINSIC_START_CALL or event_type == EXTRINSIC_SUBMIT_ENCRYPTED:
+    if event_type == EXTRINSIC_START_CALL:
         add_stake(subnet, STAKE_AMOUNT_TAO)
+    
+    if event_type == EXTRINSIC_SUBMIT_ENCRYPTED:
+        add_stake_encrypted(subnet, STAKE_AMOUNT_TAO)
 
 
 if __name__ == "__main__":

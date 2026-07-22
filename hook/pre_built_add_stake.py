@@ -97,6 +97,32 @@ def add_stake(subnet: int, amount: float):
     rebuild_prebuilt_extrinsics(force=True)
 
 
+def add_stake_encrypted(subnet: int, amount: float):
+    """Submit an MEV-protected (encrypted) add_stake for the given subnet.
+
+    Unlike add_stake(), this can't use a pre-signed extrinsic: the encrypted
+    path composes the call fresh and submits it via MevShield.submit_encrypted,
+    so it's built and signed on demand.
+    """
+    print(f"Adding encrypted stake to subnet {subnet}")
+    _, proxy, wallet, delegator = _get_staking_context()
+
+    result, msg = proxy.add_stake(
+        proxy_wallet=wallet,
+        delegator=delegator,
+        netuid=subnet,
+        hotkey=settings.DEFAULT_DEST_HOTKEY,
+        amount=bt.Balance.from_tao(amount),
+        price_with_tolerance=LIMIT_PRICE_IN_RAO,
+        allow_partial=True,
+        mev_protection=True,
+    )
+    if result:
+        print(f"Encrypted stake submitted: {amount} TAO to subnet {subnet}")
+    else:
+        print(f"Encrypted stake failed on subnet {subnet}: {msg}")
+
+
 if __name__ == "__main__":
     _get_staking_context()
     rebuild_prebuilt_extrinsics(force=True)
