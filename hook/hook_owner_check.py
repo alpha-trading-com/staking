@@ -112,6 +112,7 @@ if __name__ == "__main__":
     print("Starting hook...")
     owner_coldkeys = []
     prev_extrinsics_len = 0
+    block_count = 0
 
     while True:
         extrinsics = subtensor.substrate.retrieve_pending_extrinsics()
@@ -121,6 +122,10 @@ if __name__ == "__main__":
             owner_coldkeys = get_owner_coldkeys(subtensor)
             print("New Block started")
             proxy.init_runtime()
+            block_count += 1
+            if block_count % PREBUILT_EXTRINSICS_INTERVAL == 0:
+                rebuild_prebuilt_extrinsics(force=True)
+
             
         prev_extrinsics_len = cur_extrinsics_len
 
