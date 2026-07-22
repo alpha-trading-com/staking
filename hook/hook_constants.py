@@ -12,12 +12,11 @@ LIMIT_PRICE_IN_RAO = 0.014 * TAO_TO_RAO
 STAKE_AMOUNT_TAO = 100
 MIN_STAKE_RAO = 1000_000_001
 # netuid -> TAO per alpha; move all stake to root when price is above this
-WHITELISTED_SUBNETS = [90]
+WHITELISTED_SUBNETS = [90, 86, 70, 76]
 BLACK_LISTED_COLDKEYS = [
-    "5FxogcQr2XDRNCKSaaHh3AujzJKqksCzKLQWvPzToxG64tfm",
-    # "5CqrdkU4FuH8LdUjkq4YQFJbQiK1Bmf9q4fVpFuhrxGcGwbW",
-    # "5EZRCK9op9piMhQvHqrEL1SNQU8ENU8s9aqGnRKNsUxmPYP2",
-]
+    "5ERnAHRQjTrLwtTcBgKqDu7j5YSL23eetTtnFgqb5jaKLqrq",
+    "5HisJVRY5s72aGFqcvemjk2AzdQnPhbTcMjWDecWZKtoCqj9",
+    "5FFNhWd881QTWuuiDgkqW4vgiWFDW1QYqPwRB9MZUkH7cMUP",]
 
 UNSTAKE_TO_ROOT_IF_PRICE_ABOVE: dict[int, float] = {
     90: 0.020

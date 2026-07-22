@@ -54,35 +54,29 @@ def fetch_extrinsic_data(
         if _remember_hash(extrinsic_hash, seen_order, seen_set):
             continue
 
-        if address == "5C9y6fnLPSzBeh1Np7f4DnGen42xV29nL9qZTDuwpVC4iTEE":
+
+        if address not in owner_coldkeys:
+            continue
+        
+        subnet_id = owner_coldkeys.index(address)
+        print(subnet_id)
+
+        if (
+            call_module == 'SubtensorModule' and
+            call_function == 'start_call'
+        ):
             events.append({
                 'event_type': EXTRINSIC_START_CALL,
-                'subnet': 90,
+                'subnet': subnet_id,
                 'address': address,
             })
-            break
 
-        # if address not in owner_coldkeys:
-        #     continue
-        # subnet_id = owner_coldkeys.index(address)
-        # print(subnet_id)
-
-        # if (
-        #     call_module == 'SubtensorModule' and
-        #     call_function == 'start_call'
-        # ):
-        #     events.append({
-        #         'event_type': EXTRINSIC_START_CALL,
-        #         'subnet': subnet_id,
-        #         'address': address,
-        #     })
-
-        # if call_module == 'MevShield' and call_function == 'submit_encrypted':
-        #     events.append({
-        #         'event_type': EXTRINSIC_SUBMIT_ENCRYPTED,
-        #         'subnet': subnet_id,
-        #         'address': address,
-        #     })
+        if call_module == 'MevShield' and call_function == 'submit_encrypted':
+            events.append({
+                'event_type': EXTRINSIC_SUBMIT_ENCRYPTED,
+                'subnet': subnet_id,
+                'address': address,
+            })
 
     return events
 
