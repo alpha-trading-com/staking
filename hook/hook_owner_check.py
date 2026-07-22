@@ -2,6 +2,7 @@ import sys
 from collections import deque
 from pathlib import Path
 import bittensor as bt
+from scalecodec import ScaleBytes
 
 _HOOK_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _HOOK_DIR.parent
@@ -21,6 +22,37 @@ from hook_constants import (
     PREBUILT_EXTRINSICS_INTERVAL,
 )
 
+
+
+def retrieve_pending_extrinsics_safe(substrate) -> list:
+    """Like substrate.retrieve_pending_extrinsics(), but tolerant of extrinsics
+    the local metadata can't decode.
+
+    The stock method decodes every pending extrinsic in a single loop, so one
+    call referencing an unknown runtime type (e.g. "scale_info::405" from a
+    newer/custom pallet) raises NotImplementedError and aborts the whole batch.
+    Here each extrinsic is decoded independently and undecodable ones are
+    skipped, so a single bad entry in the mempool doesn't crash the hook.
+    """
+    runtime = substrate.init_runtime()
+    result_data = substrate.rpc_request("author_pendingExtrinsics", [])
+
+    extrinsics = []
+    for extrinsic_data in result_data["result"]:
+        try:
+            extrinsic = runtime.runtime_config.create_scale_object(
+                "Extrinsic", metadata=runtime.metadata
+            )
+            extrinsic.decode(
+                ScaleBytes(extrinsic_data),
+                check_remaining=substrate.config.get("strict_scale_decode"),
+            )
+            extrinsics.append(extrinsic)
+        except Exception:
+            # Extrinsic uses a type this runtime metadata can't decode; ignore it.
+            continue
+
+    return extrinsics
 
 
 def _remember_hash(extrinsic_hash, seen_order: deque, seen_set: set) -> bool:
@@ -115,7 +147,7 @@ if __name__ == "__main__":
     block_count = 0
 
     while True:
-        extrinsics = subtensor.substrate.retrieve_pending_extrinsics()
+        extrinsics = retrieve_pending_extrinsics_safe(subtensor.substrate)
         cur_extrinsics_len = len(extrinsics)
 
         if prev_extrinsics_len > cur_extrinsics_len:
