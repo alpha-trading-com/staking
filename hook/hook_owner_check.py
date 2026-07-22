@@ -91,6 +91,7 @@ def get_owner_coldkeys(subtensor: bt.Subtensor) -> list:
     owner_coldkeys = [subnet_info.owner_coldkey for subnet_info in subnet_infos]
     return owner_coldkeys
 
+
 def process_event(event: dict):
     event_type = event.get('event_type')
     subnet = event.get('subnet')
@@ -123,7 +124,7 @@ if __name__ == "__main__":
         cur_extrinsics_len = len(extrinsics)
 
         if prev_extrinsics_len > cur_extrinsics_len:
-            #owner_coldkeys = get_owner_coldkeys(subtensor)
+            owner_coldkeys = get_owner_coldkeys(subtensor)
             print("New Block started")
             proxy.init_runtime()
             
