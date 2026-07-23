@@ -629,7 +629,40 @@
                     <label class="input-label">Retries (optional)</label>
                     <input type="text" id="unstakeRetries" class="input-field" value="1" placeholder="Leave blank for default">
                 </div>
-                
+
+            </div>
+            <div class="form-container mb-8">
+                <h2 class="text-xl font-semibold mb-4">Unstake All (every subnet)</h2>
+                <p class="text-sm text-gray-400 mb-4">
+                    Calls <code>SubtensorModule.unstake_all(hotkey)</code>: removes all stake from the hotkey
+                    across all subnets at once. No amount, netuid or rate tolerance — the chain has no price limit
+                    for this extrinsic.
+                </p>
+                <div class="input-group">
+                    <label class="input-label">Wallet Name</label>
+                    <select id="unstakeAllWalletName" class="input-field">
+                        {% for wallet in wallet_names %}
+                            <option value="{{ wallet }}" {% if loop.first %}selected{% endif %}>{{ wallet }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Validator Hotkey</label>
+                    <input type="text" id="unstakeAllValidatorHotkey" class="input-field" value="5Gq2gs4ft5dhhjbHabvVbAhjMCV2RgKmVJKAFCUWiirbRT21">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Retries (optional)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="text" id="unstakeAllRetries" class="input-field flex-1" value="1" placeholder="Leave blank for default">
+                        <button onclick="unstakeAll()" class="btn btn-danger">Unstake All</button>
+                        <button type="button" onclick="copyUnstakeAllCommand()" class="btn" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap; background: #10b981;">Copy Cmd</button>
+                        <input type="checkbox" id="unstakeAllAlpha" class="form-checkbox h-4 w-4 text-blue-600">
+                        <label for="unstakeAllAlpha" class="text-sm text-red-500 mb-0" style="white-space: nowrap;">Unstake All Alpha (to root)</label>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1">
+                        With "Unstake All Alpha" checked, <code>unstake_all_alpha</code> is used instead: alpha is moved to root (netuid 0) rather than converted to TAO.
+                    </p>
+                </div>
             </div>
         </div>
         <!-- Move Stake Tab -->
@@ -869,7 +902,13 @@
                 allowPartialUnstaking: document.getElementById('allowPartialUnstaking')?.checked || false,
                 unstakeValidatorHotkey: document.getElementById('unstakeValidatorHotkey')?.value || '',
                 unstakeRetries: document.getElementById('unstakeRetries')?.value || '',
-                
+
+                // Unstake all (every subnet)
+                unstakeAllWalletName: document.getElementById('unstakeAllWalletName')?.value || '',
+                unstakeAllValidatorHotkey: document.getElementById('unstakeAllValidatorHotkey')?.value || '',
+                unstakeAllAlpha: document.getElementById('unstakeAllAlpha')?.checked || false,
+                unstakeAllRetries: document.getElementById('unstakeAllRetries')?.value || '',
+
                 // Move stake tab
                 moveWalletName: document.getElementById('moveWalletName')?.value || '',
                 moveAmount: document.getElementById('moveAmount')?.value || '',
@@ -966,7 +1005,21 @@
                 if (inputs.unstakeRetries !== undefined && document.getElementById('unstakeRetries')) {
                     document.getElementById('unstakeRetries').value = inputs.unstakeRetries;
                 }
-                
+
+                // Restore unstake all inputs
+                if (inputs.unstakeAllWalletName && document.getElementById('unstakeAllWalletName')) {
+                    document.getElementById('unstakeAllWalletName').value = inputs.unstakeAllWalletName;
+                }
+                if (inputs.unstakeAllValidatorHotkey !== undefined && document.getElementById('unstakeAllValidatorHotkey')) {
+                    document.getElementById('unstakeAllValidatorHotkey').value = inputs.unstakeAllValidatorHotkey;
+                }
+                if (inputs.unstakeAllAlpha !== undefined && document.getElementById('unstakeAllAlpha')) {
+                    document.getElementById('unstakeAllAlpha').checked = inputs.unstakeAllAlpha;
+                }
+                if (inputs.unstakeAllRetries !== undefined && document.getElementById('unstakeAllRetries')) {
+                    document.getElementById('unstakeAllRetries').value = inputs.unstakeAllRetries;
+                }
+
                 // Restore move stake tab inputs
                 if (inputs.moveWalletName && document.getElementById('moveWalletName')) {
                     document.getElementById('moveWalletName').value = inputs.moveWalletName;
@@ -1164,6 +1217,44 @@
             } catch (error) {
                 console.error('Error unstaking:', error);
                 alert('Error unstaking. Please try again.');
+            } finally {
+                setButtonLoading(button, false);
+            }
+        }
+
+        // Unstake all subnets for a hotkey (SubtensorModule.unstake_all)
+        async function unstakeAll() {
+            const button = document.querySelector('button[onclick="unstakeAll()"]');
+            const walletName = document.getElementById('unstakeAllWalletName').value;
+            const validatorHotkey = document.getElementById('unstakeAllValidatorHotkey').value;
+            const unstakeAllAlpha = document.getElementById('unstakeAllAlpha').checked;
+            const retries = document.getElementById('unstakeAllRetries').value;
+            const useEra = document.getElementById('useEra').checked;
+
+            if (!walletName || !validatorHotkey) {
+                alert('Please select a wallet and enter a validator hotkey');
+                return;
+            }
+
+            const destination = unstakeAllAlpha ? 'root (netuid 0)' : 'TAO on the coldkey';
+            const confirmMessage = `Unstake EVERYTHING from validator "${validatorHotkey}" on ALL subnets using wallet "${walletName}"?\n\nProceeds go to ${destination}. This cannot be undone.`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            try {
+                setButtonLoading(button, true);
+                const mevProtection = document.getElementById('mevProtection').checked;
+                let url = `/unstake_all?wallet_name=${walletName}&dest_hotkey=${validatorHotkey}&unstake_all_alpha=${unstakeAllAlpha}&use_era=${useEra}&mev_protection=${mevProtection}`;
+                if (retries) {
+                    url += `&retries=${retries}`;
+                }
+                const response = await fetch(url);
+                const result = await response.json();
+                alert(JSON.stringify(result, null, 2));
+            } catch (error) {
+                console.error('Error unstaking all:', error);
+                alert('Error unstaking all. Please try again.');
             } finally {
                 setButtonLoading(button, false);
             }
@@ -1651,6 +1742,53 @@
             }
         }
 
+        // Generate and copy unstake all curl command
+        function copyUnstakeAllCommand() {
+            const walletName = document.getElementById('unstakeAllWalletName').value;
+            const validatorHotkey = document.getElementById('unstakeAllValidatorHotkey').value;
+            const unstakeAllAlpha = document.getElementById('unstakeAllAlpha').checked;
+            const retries = document.getElementById('unstakeAllRetries').value;
+            const useEra = document.getElementById('useEra').checked;
+
+            if (!walletName || !validatorHotkey) {
+                showToast('Please fill in Wallet Name and Validator Hotkey', 'error');
+                return;
+            }
+
+            const mevProtection = document.getElementById('mevProtection').checked;
+            const baseUrl = getBaseUrl();
+            let curlCmd = `curl -u admin:PASSWORD "${baseUrl}/unstake_all?wallet_name=${encodeURIComponent(walletName)}&dest_hotkey=${encodeURIComponent(validatorHotkey)}&unstake_all_alpha=${unstakeAllAlpha}&use_era=${useEra}&mev_protection=${mevProtection}`;
+
+            if (retries) {
+                curlCmd += `&retries=${encodeURIComponent(retries)}`;
+            }
+
+            curlCmd += '"';
+
+            copyToClipboard(curlCmd);
+        }
+
+        // Copy text to the clipboard with a fallback for older browsers
+        function copyToClipboard(text) {
+            const fallback = function() {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Curl command copied to clipboard!', 'success');
+            };
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showToast('Curl command copied to clipboard!', 'success');
+                }, fallback);
+            } else {
+                fallback();
+            }
+        }
+
         // Generate and copy move stake curl command
         function copyMoveStakeCommand() {
             const walletName = document.getElementById('moveWalletName').value;
@@ -1967,6 +2105,7 @@
                 'unstakeWalletName', 'unstakeAmount', 'unstakeNetuid', 
                 'unstakeRateTolerance', 'minToleranceUnstaking', 'allowPartialUnstaking',
                 'unstakeValidatorHotkey', 'unstakeRetries',
+                'unstakeAllWalletName', 'unstakeAllValidatorHotkey', 'unstakeAllAlpha', 'unstakeAllRetries',
                 'moveWalletName', 'moveAmount', 'originNetuid', 
                 'destinationNetuid', 'originHotkey', 'destinationHotkey', 'moveRetries',
                 'calcAmount', 'calcNetuid', 'toleranceOffset', 'useEra', 'mevProtection'

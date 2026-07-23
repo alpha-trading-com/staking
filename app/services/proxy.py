@@ -169,6 +169,31 @@ class Proxy:
         return self._do_proxy_call(proxy_wallet, delegator, call, period=period, mev_protection=mev_protection)
 
 
+    def unstake_all(
+        self,
+        proxy_wallet: bt.Wallet,
+        delegator: str,
+        hotkey: str,
+        unstake_all_alpha: bool = False,
+        period: Optional[int] = None,
+        mev_protection: bool = DEFAULT_MEV_PROTECTION,
+    ) -> tuple[bool, str]:
+        """Remove all stake from a hotkey across every subnet.
+
+        When unstake_all_alpha is True, the alpha is moved to root (netuid 0) instead
+        of being converted to TAO on the coldkey.
+        """
+        self.init_runtime()
+        call = self.substrate.compose_call(
+            call_module='SubtensorModule',
+            call_function='unstake_all_alpha' if unstake_all_alpha else 'unstake_all',
+            call_params={
+                "hotkey": hotkey,
+            }
+        )
+        return self._do_proxy_call(proxy_wallet, delegator, call, period=period, mev_protection=mev_protection)
+
+
     def move_stake(
         self,
         proxy_wallet: bt.Wallet,

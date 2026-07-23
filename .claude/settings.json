@@ -7,7 +7,10 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('app/services/proxy.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('/root/staking/app/services/proxy.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(curl -s -m 10 http://localhost:10290/health)",
-      "Bash(curl -s -m 20 -i http://localhost:10290/)"
+      "Bash(curl -s -m 20 -i http://localhost:10290/)",
+      "Bash(timeout 60 venv/bin/python -c ' *)",
+      "Bash(PYTHONPATH=. venv/bin/python -c ' *)",
+      "Bash(timeout 90 venv/bin/python -c ' *)"
     ]
   }
 }

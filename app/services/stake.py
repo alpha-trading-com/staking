@@ -434,6 +434,70 @@ class StakeService:
             "error": msg
         }
 
+    def unstake_all(
+        self,
+        wallet_name: str,
+        dest_hotkey: Optional[str] = None,
+        unstake_all_alpha: bool = False,
+        retries: Optional[int] = None,
+        use_era: Optional[bool] = None,
+        mev_protection: Optional[bool] = None
+    ) -> Dict[str, Any]:
+        """
+        Remove all stake from a hotkey across every subnet in a single extrinsic.
+
+        Args:
+            wallet_name: Name of the wallet to use
+            dest_hotkey: Hotkey address to unstake everything from
+            unstake_all_alpha: If True, uses unstake_all_alpha (alpha goes to root)
+                instead of unstake_all (alpha is converted to TAO on the coldkey)
+            retries: Number of retry attempts
+            use_era: Whether to use era parameter in extrinsic creation
+            mev_protection: Whether to submit the extrinsic through MEV protection
+
+        Returns:
+            Dict containing success status and error message
+        """
+        if dest_hotkey is None:
+            dest_hotkey = settings.DEFAULT_DEST_HOTKEY
+        if retries is None:
+            retries = settings.DEFAULT_RETRIES
+        if use_era is None:
+            use_era = settings.USE_ERA
+        if mev_protection is None:
+            mev_protection = DEFAULT_MEV_PROTECTION
+
+        if wallet_name not in self.wallets:
+            return {"success": False, "error": f"Wallet '{wallet_name}' not found"}
+
+        wallet, delegator = self.wallets[wallet_name]
+
+        success = False
+        msg = None
+
+        for _ in range(retries):
+            try:
+                result, msg = self.proxy.unstake_all(
+                    proxy_wallet=wallet,
+                    delegator=delegator,
+                    hotkey=dest_hotkey,
+                    unstake_all_alpha=unstake_all_alpha,
+                    period=1 if use_era else 0,
+                    mev_protection=mev_protection,
+                )
+                if result:
+                    success = True
+                    break
+            except Exception as e:
+                traceback.print_exc()
+                msg = str(e)
+                continue
+
+        return {
+            "success": success,
+            "error": msg
+        }
+
     def batch_ops(
         self,
         wallet_name: str,

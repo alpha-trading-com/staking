@@ -169,6 +169,44 @@ def unstake(
         mev_protection=mev_protection
     )
 
+@router.get("/unstake_all")
+def unstake_all(
+    wallet_name: str,
+    dest_hotkey: Optional[str] = None,
+    unstake_all_alpha: bool = False,
+    retries: Optional[int] = None,
+    use_era: Optional[bool] = None,
+    mev_protection: Optional[bool] = None,
+    username: str = Depends(get_current_username)
+):
+    """Remove all stake from a hotkey across every subnet (SubtensorModule.unstake_all)."""
+    if dest_hotkey is None:
+        dest_hotkey = settings.DEFAULT_DEST_HOTKEY
+    if retries is None:
+        retries = settings.DEFAULT_RETRIES
+    if use_era is None:
+        use_era = settings.USE_ERA
+
+    # Validate retries parameter
+    if retries < 1:
+        retries = 1
+
+    if wallet_name not in stake_service.wallets:
+        return {
+            "success": False,
+            "error": f"Wallet '{wallet_name}' not found"
+        }
+
+    return stake_service.unstake_all(
+        wallet_name=wallet_name,
+        dest_hotkey=dest_hotkey,
+        unstake_all_alpha=unstake_all_alpha,
+        retries=retries,
+        use_era=use_era,
+        mev_protection=mev_protection
+    )
+
+
 @router.post("/batch")
 def batch(
     body: BatchRequest,
