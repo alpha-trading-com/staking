@@ -61,9 +61,10 @@ class Settings(BaseModel):
     # DELEGATORS: List[str] = ["5HCT4AarReToT1BKyLtJXJfSLs4zRS7dENnZ7iysqrqxXyV7"]
     # WALLET_NAMES: List[str] = ["proxy"]
     # DELEGATORS: List[str] = ["5CsiGTsNBAn1bNiGNEd5LYpo6bm3PXT5ogPrQmvpZaUb2XzZ"]
-    WALLET_NAMES: List[str] = ["leo"]
-    DELEGATORS: List[str] = ["5ESwpyuGxBmkXuQ1J8DqtmhFZQEDzLWKVup9xai567JRhvDN"]
-    
+    # WALLET_NAMES: List[str] = ["leo"]
+    # DELEGATORS: List[str] = ["5ESwpyuGxBmkXuQ1J8DqtmhFZQEDzLWKVup9xai567JRhvDN"]
+    WALLET_NAMES: List[str] = ["soon_3"]
+    DELEGATORS: List[str] = ["5GU6PGRZY14VXftyJsAgdkH7NRMYE24A2sViGHnPZRNpFYPJ"]
 
 
     ADMIN_HASH: str = "$2b$12$CqCJKab8CIgqnPU/.eT41.kzdl4d6a3/Vx70R50GAom7Im0tjGemm"
